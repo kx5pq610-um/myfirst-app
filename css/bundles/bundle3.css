@@ -1,0 +1,186 @@
+/* v13 late-game branches */
+.destinyBar{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.destinyChip{font-size:10px;padding:3px 6px;border-radius:999px;border:1px solid #6e5a3d;background:#17110d;color:#e9d5aa}
+.destinyAlive{color:#aee6a9;border-color:#52744f}
+.destinyLost{color:#f0aaa2;border-color:#7e4f49}
+.routePanel{border:1px solid #7b6340;background:#17120d;padding:10px;border-radius:8px;margin-top:10px}
+.routePanel b{color:#f3d284}
+
+
+
+
+/* v14 finale */
+.endingPanel{border:1px solid #7b613d;background:linear-gradient(#1d1710,#110d09);padding:16px;border-radius:10px}
+.endingTitle{font-family:serif;font-size:34px;text-align:center;color:#f4d27d;margin-bottom:10px}
+.endingRank{font-family:serif;font-size:56px;text-align:center;font-weight:900;color:#ffe394;text-shadow:0 3px #6a281e}
+.legacyGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.legacyCard{border:1px solid #665235;background:#17120d;padding:10px;border-radius:8px;text-align:center}
+.legacyCard b{color:#eed084}
+@media(max-width:560px){.legacyGrid{grid-template-columns:1fr}}
+
+
+
+
+/* v15 postgame */
+.postgameGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.postCard{border:1px solid #705a39;background:#17120d;padding:12px;border-radius:9px}
+.postCard h3{margin:0 0 6px;color:#efd17e}
+.achievement{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;border:1px solid #5f4c32;background:#15110c;padding:8px;border-radius:8px;margin:6px 0}
+.achievement.locked{opacity:.4;filter:grayscale(1)}
+.achievement .icon{font-size:22px}
+.recordGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.recordCard{border:1px solid #665337;background:#17120d;border-radius:8px;padding:10px;text-align:center}
+.recordCard b{font-family:serif;color:#f3d47f;font-size:22px;display:block}
+.diffHero{color:#ffbd73}
+.galleryBtn{background:linear-gradient(#63517f,#3b3052)}
+@media(max-width:560px){.postgameGrid,.recordGrid{grid-template-columns:1fr}}
+
+
+.charProfile{display:grid;grid-template-columns:58px 1fr;gap:9px;align-items:center;margin-bottom:8px}
+.charBadge{
+ width:58px;height:58px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+ font-family:serif;font-size:30px;font-weight:900;color:#fff0c4;border:2px solid #d7bd7e;
+ box-shadow:inset 0 0 15px #0006,0 3px 8px #0008
+}
+.charBadge[data-id="liu"]{background:linear-gradient(135deg,#5f8a63,#294a34)}
+.charBadge[data-id="guan"]{background:linear-gradient(135deg,#3d7a56,#173d2a)}
+.charBadge[data-id="zhang"]{background:linear-gradient(135deg,#8f493e,#3b1d1a)}
+.charBadge[data-id="zhao"]{background:linear-gradient(135deg,#8fa0b7,#46576f)}
+.charBadge[data-id="zhuge"]{background:linear-gradient(135deg,#7182a0,#3f4962)}
+.charBadge[data-id="tian"]{background:linear-gradient(135deg,#6f8b98,#364f59)}
+
+:root{
+  --ink:#14110d;
+  --paper:#efe2c1;
+  --paper-deep:#d9c18b;
+  --lacquer:#25160f;
+  --lacquer-2:#382116;
+  --gold:#d9b25f;
+  --gold-hi:#f4dd98;
+  --jade:#476c52;
+  --vermilion:#923e33;
+  --indigo:#334d68;
+  --mist:#c6cbd0;
+  --shadow:#0009;
+
+  --liu:#4f7455;
+  --guan:#305f46;
+  --zhang:#6f332e;
+  --zhao:#66788e;
+  --zhuge:#515f7b;
+  --tian:#536e7a;
+
+  --radius:12px;
+  --panel-border:1px solid #7d663f;
+  --panel-bg:linear-gradient(180deg,#2f2419 0%,#1a140f 100%);
+}
+
+body{
+  background:
+    radial-gradient(circle at 50% -15%,#49321e 0%,transparent 40%),
+    linear-gradient(180deg,#16100c 0%,#0b0907 100%);
+}
+
+header{
+  background:
+    linear-gradient(90deg,#2f1d13,#1b120d 48%,#2d1a12);
+  border-color:#8b6c3d;
+}
+
+header::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:-1px;height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:.65;
+}
+
+.panel{
+  background:var(--panel-bg);
+  border:var(--panel-border);
+  border-radius:var(--radius);
+}
+
+button{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(#5c472b,#35291d);
+  border:1px solid #9b7a48;
+  color:#fff0c7;
+  box-shadow:inset 0 1px #ffffff16,0 2px 5px #0007;
+  transition:transform .12s ease,filter .12s ease,box-shadow .12s ease;
+}
+button:hover:not(:disabled){
+  transform:translateY(-1px);
+  filter:brightness(1.12);
+  box-shadow:inset 0 1px #ffffff25,0 4px 10px #0008;
+}
+button:active:not(:disabled){
+  transform:translateY(1px);
+}
+
+.unit{
+  border:2px solid #ead9a9;
+  background:#455;
+}
+.unit[data-id="liu"]{background:linear-gradient(135deg,#5f8a63,#294a34)}
+.unit[data-id="guan"]{background:linear-gradient(135deg,#3d7a56,#173d2a)}
+.unit[data-id="zhang"]{background:linear-gradient(135deg,#8f493e,#3b1d1a)}
+.unit[data-id="zhao"]{background:linear-gradient(135deg,#8fa0b7,#46576f)}
+.unit[data-id="zhuge"]{background:linear-gradient(135deg,#7182a0,#3f4962)}
+.unit[data-id="tian"]{background:linear-gradient(135deg,#6f8b98,#364f59)}
+.unit.enemy{background:linear-gradient(135deg,#b95b4d,#6b2924)}
+
+.unit::before{
+  content:"";
+  position:absolute;
+  inset:2px;
+  border-radius:6px;
+  border:1px solid #fff2;
+  pointer-events:none;
+}
+
+.tile.selected{
+  animation:selectedPulse 1.25s ease-in-out infinite;
+}
+@keyframes selectedPulse{
+  0%,100%{box-shadow:inset 0 0 0 3px #ffe277,0 0 8px #ffe27755}
+  50%{box-shadow:inset 0 0 0 3px #fff2a3,0 0 18px #ffe277aa}
+}
+
+#log{
+  background:
+    linear-gradient(#0e0b08ee,#100d09ee),
+    repeating-linear-gradient(0deg,#fff1 0 1px,transparent 1px 22px);
+}
+#log div{
+  border-bottom:1px solid #ffffff08;
+  padding-bottom:3px;
+}
+
+.objectiveBox{
+  border-left:4px solid var(--gold);
+  background:linear-gradient(90deg,#3c2c18aa,#18120daa);
+}
+
+.turnBadge{
+  border:1px solid #7893b3;
+  box-shadow:inset 0 0 8px #ffffff16;
+}
+
+.envChip,.storyFlag,.destinyChip{
+  backdrop-filter:blur(4px);
+  background:#130f0bcc;
+}
+
+/* cinematic command buttons */
+#attackBtn{background:linear-gradient(#7a4433,#49251d)}
+#strategyBtn{background:linear-gradient(#5e507f,#382f50)}
+#itemBtn{background:linear-gradient(#5d6841,#384025)}
+#talkBtn{background:linear-gradient(#3d6670,#27444b)}
+#specialBtn{background:linear-gradient(#80662e,#4b3a1b)}
+
+/* stage / chapter title */
+#stageTitle{
+  letter-spacing:.05em;
+}
