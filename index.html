@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>三国志 英傑戦記 MVP v16</title>
+
+
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="fxText"></div>
+<div id="chapterCurtain" style="position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#0c0907eF;color:#f4d27d;font-family:serif;font-size:clamp(28px,7vw,60px);font-weight:900;text-align:center;padding:24px;"></div>
+
+<div id="cutIn" class="cutIn">
+  <div id="cutPortrait" class="cutPortrait">劉</div>
+  <div class="cutText"><b id="cutName">劉備</b><span id="cutLine">仁徳の号令！</span></div>
+</div>
+<div id="titleScreen">
+ <div class="titleBox">
+  <div class="titleLogo">三国志 英傑戦記</div>
+  <div class="titleSub">乱世に起つ、義勇の物語</div>
+  <div class="titleButtons">
+   <button id="newGameBtn" class="primary">新しく始める</button>
+   <button id="continueBtn">つづきから</button>
+   <button id="slotLoadBtn">セーブスロット</button>
+   <button id="postgameBtn" class="galleryBtn">クリア後メニュー</button>
+  </div>
+  <p class="small" style="margin-top:18px">MVP v16 ― 全6章 / 兵種・策略・装備・一騎打ち・必殺技</p>
+ </div>
+</div>
+<div class="audioCtl"><button id="audioBtn">🔊 音ON</button></div>
+<div id="app">
+<header>
+  <div>
+    <h1>三国志 英傑戦記</h1>
+    <div id="stageTitle">第一章　義勇軍、起つ</div>
+  </div>
+  <div class="topStats">
+    <div id="money" class="money">軍資金 300</div>
+    <div style="text-align:right">
+      <div id="turnBadge" class="turnBadge">自軍ターン</div>
+      <div id="turnNo" class="small">TURN 1</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="boardWrap"><div id="board"></div></div>
+  <div class="side">
+    <div class="panel">
+      <h2>武将情報</h2>
+      <div id="unitInfo" class="small">味方武将を選択してください。</div>
+    </div>
+    <div class="panel">
+      <h2>行動</h2>
+      <div class="btnrow">
+        <button id="attackBtn" disabled>攻撃</button>
+        <button id="strategyBtn" class="magic" disabled>策略</button>
+        <button id="itemBtn" disabled>道具</button>
+        <button id="specialBtn" disabled>調べる</button>
+        <button id="talkBtn" class="talkBtn" disabled>会話</button>
+        <button id="waitBtn" disabled>待機</button>
+        <button id="endTurnBtn" class="primary">ターン終了</button>
+        <button id="saveBtn">手動セーブ</button>
+        <button id="restartBtn" class="danger">最初から</button>
+      </div>
+      <div class="small" style="margin-top:8px">青＝移動　赤＝攻撃　紫＝策略</div>
+      <div id="objectiveBox" class="objectiveBox">勝利条件：敵軍を全滅</div>
+      <div class="envBar">
+        <span id="weatherChip" class="envChip">天候：晴</span>
+        <span id="timeChip" class="envChip">時刻：昼</span>
+        <span id="moraleChip" class="envChip">士気：100</span>
+        <span id="storyFlagChip" class="storyFlag">歴史分岐：未確定</span>
+        <span id="zhangFlagChip" class="destinyChip">張飛：生存</span>
+        <span id="liuFlagChip" class="destinyChip">劉備：生存</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>戦況</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="story" class="overlay">
+  <div class="modal">
+    <h2 id="storyTitle"></h2>
+    <div id="storyBody"></div>
+    <button id="storyBtn" class="primary" style="width:100%;margin-top:8px">出陣する</button>
+  </div>
+</div>
+
+<div id="choice" class="overlay">
+  <div class="modal">
+    <h2 id="choiceTitle">選択</h2>
+    <div id="choiceText" class="small"></div>
+    <div id="choiceList" class="menuList"></div>
+    <button id="choiceCancel" style="width:100%;margin-top:10px">戻る</button>
+  </div>
+</div>
+
+<div id="result" class="overlay">
+  <div class="modal">
+    <h2 id="resultTitle">勝利！</h2>
+    <p id="resultText"></p>
+    <button id="toCampBtn" class="primary" style="width:100%">陣営へ戻る</button>
+    <button id="resultRestart" style="width:100%;margin-top:8px">最初から遊ぶ</button>
+  </div>
+</div>
+
+<div id="camp" class="overlay">
+  <div class="modal">
+    <h2>義勇軍の陣営</h2>
+    <p class="small">戦いの合間に装備と道具を整え、次の戦場へ向かいます。</p>
+    <div id="worldMap" class="world"></div>
+    <div class="btnrow">
+      <button id="shopBtn" class="shop">武器屋・道具屋</button>
+      <button id="rosterBtn">武将一覧</button>
+      <button id="campSaveBtn">陣営でセーブ</button>
+      <button id="nextBattleBtn" class="primary">次の戦場へ</button>
+    </div>
+  </div>
+</div>
+
+<div id="shop" class="overlay">
+  <div class="modal">
+    <h2>武器屋・道具屋</h2>
+    <div id="shopMoney" class="money"></div>
+    <div id="shopList" class="shopGrid"></div>
+    <button id="shopClose" style="width:100%;margin-top:12px">陣営へ戻る</button>
+  </div>
+</div>
+
+<div id="roster" class="overlay">
+  <div class="modal">
+    <h2>武将一覧</h2>
+    <div id="rosterList" class="roster"></div>
+    <button id="rosterClose" style="width:100%;margin-top:12px">戻る</button>
+  </div>
+</div>
+
+<div id="duel" class="overlay">
+  <div class="modal duel">
+    <h2>一騎打ち！</h2>
+    <div class="fighters"><span id="duelA">関羽</span><span id="duelB">敵将</span></div>
+    <div class="vs">VS</div>
+    <p id="duelText"></p>
+    <button id="duelBtn" class="primary" style="width:100%">勝負！</button>
+  </div>
+</div>
+
+
+<div id="saveSlotsModal" class="overlay">
+ <div class="modal">
+  <h2>セーブスロット</h2>
+  <div id="saveSlotsList" class="saveSlots"></div>
+  <button id="saveSlotsClose" style="width:100%;margin-top:10px">閉じる</button>
+ </div>
+</div>
+
+<div id="trioDuel" class="overlay">
+ <div class="modal duel">
+  <h2>三英戦呂布</h2>
+  <div class="bossBanner">呂 布</div>
+  <div class="trio">
+   <div>劉備</div><div>関羽</div><div>張飛</div>
+  </div>
+  <p id="trioText">三人の英傑が、最強の武将・呂布に挑む！</p>
+  <button id="trioBtn" class="primary" style="width:100%">三英、進め！</button>
+ </div>
+</div>
+
+
+<div id="deployModal" class="overlay">
+  <div class="modal">
+    <h2>出撃部隊編成</h2>
+    <p class="small">出撃させる武将を選択してください。劉備は必須です。</p>
+    <div id="deployList" class="deployGrid"></div>
+    <button id="deployStartBtn" class="primary" style="width:100%;margin-top:12px">この部隊で出撃</button>
+  </div>
+</div>
+
+<div id="promotionModal" class="overlay">
+  <div class="modal">
+    <h2>クラスチェンジ</h2>
+    <div id="promotionBody"></div>
+    <button id="promotionClose" style="width:100%;margin-top:10px">閉じる</button>
+  </div>
+</div>
+
+<div id="routeModal" class="overlay">
+  <div class="modal">
+    <h2>進軍路を選択</h2>
+    <p>洛陽を離れた軍は、二つの進軍路を前にした。</p>
+    <div class="routeChoice">
+      <button id="routeA" class="primary">北路<br><span class="small">敵が多い・報酬大</span></button>
+      <button id="routeB">南路<br><span class="small">敵が少ない・村イベント多</span></button>
+    </div>
+  </div>
+</div>
+
+
+<div id="ratingModal" class="overlay">
+  <div class="modal">
+    <h2>戦闘評価</h2>
+    <div id="ratingScore" class="scoreBig">A</div>
+    <div id="ratingBody" class="ratingBox"></div>
+    <button id="ratingClose" class="primary" style="width:100%">陣営へ</button>
+  </div>
+</div>
+
+
+<div id="meritModal" class="overlay">
+  <div class="modal">
+    <h2>戦功報酬</h2>
+    <p>今回の戦功により、追加報酬を一つ選べます。</p>
+    <div class="meritBox">
+      <button id="meritMoney" class="shop">軍資金 +800</button>
+      <button id="meritItem">全員に気力薬</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="endingModal" class="overlay">
+  <div class="modal endingPanel">
+    <div id="endingTitle" class="endingTitle">エンディング</div>
+    <div id="endingRank" class="endingRank">英傑</div>
+    <div id="endingText"></div>
+    <div id="legacyGrid" class="legacyGrid"></div>
+    <button id="endingRestart" class="primary" style="width:100%;margin-top:14px">タイトルへ戻る</button>
+  </div>
+</div>
+
+
+<div id="postgameModal" class="overlay">
+ <div class="modal">
+  <h2>クリア後メニュー</h2>
+  <div id="postgameSummary" class="small"></div>
+  <div class="postgameGrid">
+   <div class="postCard">
+    <h3>New Game+</h3>
+    <p class="small">レベル・装備・軍資金の一部を引き継ぎ、最初から遊びます。</p>
+    <button id="ngPlusBtn" class="primary" style="width:100%">周回を始める</button>
+   </div>
+   <div class="postCard">
+    <h3>英雄モード</h3>
+    <p class="small">敵能力強化・獲得報酬増加。熟練者向けです。</p>
+    <button id="heroModeBtn" style="width:100%">英雄モードで開始</button>
+   </div>
+   <div class="postCard">
+    <h3>実績</h3>
+    <p class="small">これまでのプレイで達成した実績を確認します。</p>
+    <button id="achievementBtn" style="width:100%">実績を見る</button>
+   </div>
+   <div class="postCard">
+    <h3>エンディング回想</h3>
+    <p class="small">到達済みのエンディングを見返します。</p>
+    <button id="galleryBtn" style="width:100%">回想する</button>
+   </div>
+   <div class="postCard">
+    <h3>戦績</h3>
+    <p class="small">累計撃破数・被ダメージ・最高評価などを確認します。</p>
+    <button id="recordsBtn" style="width:100%">戦績を見る</button>
+   </div>
+   <div class="postCard">
+    <h3>試練の戦場</h3>
+    <p class="small">クリア後専用の強敵戦です。</p>
+    <button id="challengeBtn" class="danger" style="width:100%">挑戦する</button>
+   </div>
+  </div>
+  <button id="postgameClose" style="width:100%;margin-top:12px">閉じる</button>
+ </div>
+</div>
+
+<div id="achievementModal" class="overlay">
+ <div class="modal">
+  <h2>実績</h2>
+  <div id="achievementList"></div>
+  <button id="achievementClose" style="width:100%;margin-top:10px">戻る</button>
+ </div>
+</div>
+
+<div id="galleryModal" class="overlay">
+ <div class="modal">
+  <h2>エンディング回想</h2>
+  <div id="galleryList" class="menuList"></div>
+  <button id="galleryClose" style="width:100%;margin-top:10px">戻る</button>
+ </div>
+</div>
+
+<div id="recordsModal" class="overlay">
+ <div class="modal">
+  <h2>戦績</h2>
+  <div id="recordsBody" class="recordGrid"></div>
+  <button id="recordsClose" style="width:100%;margin-top:10px">戻る</button>
+ </div>
+</div>
+
+<script src="js/game.js"></script>
+</body>
+</html>
