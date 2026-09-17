@@ -1,0 +1,171 @@
+exp:0,acted:false,role:'軍師',troop:'軍師',growth:{hp:3,atk:1,def:1,mp:3},items:['気力薬'],weapon:null,armor:null};
+}
+
+function makeEscort(e){
+ return {id:'escort',side:'player',name:e.name,char:e.char,x:e.x,y:e.y,hp:e.hp,maxHp:e.maxHp,mp:0,maxMp:0,atkBase:0,defBase:3,move:e.move,lv:1,exp:0,acted:false,role:'護衛対象',troop:'民間人',growth:{hp:0,atk:0,def:0,mp:0},items:[],weapon:null,armor:null,isEscort:true};
+}
+function makeEnemy(a){
+ const [id,name,char,x,y,hp,atkBase,defBase,move,lv,role]=a;
+ const hero=difficulty==='hero'?1.22:1;
+ const ehp=Math.round(hp*hero),eatk=Math.round(atkBase*hero),edef=Math.round(defBase*hero);
+ return {id,side:'enemy',name,char,x,y,hp:ehp,maxHp:ehp,mp:0,maxMp:0,atkBase:eatk,defBase:edef,move,lv,exp:0,acted:false,role,troop:role.includes('弓')?'弓兵':role.includes('槍')?'槍兵':role.includes('騎')?'騎兵':'歩兵',growth:{hp:4,atk:1,def:1,mp:0},items:[],weapon:null,armor:null};
+}
+function atk(u){return u.atkBase+(u.weapon?.atk||0)+(u.tempAtk||0)}
+function def(u){return u.defBase+(u.armor?.def||0)+(u.guardTurns>0?3:0)}
+function attackRange(u){
+ let r=['弓兵','弩兵','連弩兵'].includes(u.troop)?2+(u.bonusRange||0):1;
+ if(currentWeather==='fog'&&r>1)r=Math.max(1,r-1);
+ return r;
+}
+function statusText(u){
+ const s=[];
+ if(u.burnTurns>0)s.push('🔥炎上');
+ if(u.poisonTurns>0)s.push('☠毒');
+ if(u.guardTurns>0)s.push('🛡堅守');
+ return s;
+}
+function showCutIn(u,line){
+ const box=document.getElementById('cutIn');
+ document.getElementById('cutPortrait').textContent=u.char||u.name?.[0]||'?';
+ document.getElementById('cutName').textContent=u.name;
+ document.getElementById('cutLine').textContent=line;
+ box.classList.remove('show');void box.offsetWidth;box.classList.add('show');
+ setTimeout(()=>box.classList.remove('show'),720);
+}
+function applyEndTurnStatuses(u){
+ if(u.hp<=0)return;
+ if(u.burnTurns>0){
+  const d=Math.max(2,Math.round(u.maxHp*.08));u.hp=Math.max(0,u.hp-d);u.burnTurns--;
+  log(`🔥 ${u.name}は炎上で${d}のダメージ。`,'bad');
+ }
+ if(u.poisonTurns>0){
+  const d=Math.max(1,Math.round(u.maxHp*.06));u.hp=Math.max(0,u.hp-d);u.poisonTurns--;
+  log(`☠ ${u.name}は毒で${d}のダメージ。`,'bad');
+ }
+ if(u.guardTurns>0)u.guardTurns--;
+}
+
+function troopMultiplier(a,d){
+ const A=a.troop||'歩兵',D=d.troop||'歩兵';
+ if((A==='騎兵'&&D==='弓兵')||(A==='弓兵'&&D==='槍兵')||(A==='槍兵'&&D==='騎兵'))return 1.25;
+ if((D==='騎兵'&&A==='弓兵')||(D==='弓兵'&&A==='槍兵')||(D==='槍兵'&&A==='騎兵'))return .80;
+ return 1;
+}
+
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+let audioCtx=null;
+function ensureAudio(){if(audioOn&&!audioCtx)audioCtx=new AudioCtx()}
+function tone(freq=440,dur=.09,type='square',vol=.025){
+ if(!audioOn)return;ensureAudio();if(!audioCtx)return;
+ const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audioCtx.destination);
+ o.start();g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);
+}
+function sfx(kind){
+ if(kind==='hit'){tone(140,.08,'square',.035);setTimeout(()=>tone(95,.08,'square',.02),40)}
+ if(kind==='fire'){tone(260,.14,'sawtooth',.03);setTimeout(()=>tone(190,.18,'sawtooth',.02),80)}
+ if(kind==='heal'){tone(520,.12,'sine',.03);setTimeout(()=>tone(660,.14,'sine',.025),80)}
+ if(kind==='level'){[440,550,660,880].forEach((f,i)=>setTimeout(()=>tone(f,.12,'square',.02),i*90))}
+ if(kind==='boss'){[110,98,82].forEach((f,i)=>setTimeout(()=>tone(f,.28,'sawtooth',.035),i*180))}
+}
+function combatFx(text){
+ const fx=document.getElementById('fxText'),wrap=document.querySelector('.boardWrap');
+ fx.textContent=text;if(text.includes('火計'))sfx('fire');else if(text.includes('回復'))sfx('heal');else if(text.includes('LEVEL'))sfx('level');else sfx('hit');fx.classList.remove('show');void fx.offsetWidth;fx.classList.add('show');
+ wrap.classList.remove('shake');void wrap.offsetWidth;wrap.classList.add('shake');
+ setTimeout(()=>{fx.classList.remove('show');wrap.classList.remove('shake')},500);
+}
+
+
+function preparePlayers(carry){
+ let ps=carry?carry.map(u=>({...u,items:[...(u.items||[])]})):basePlayers();
+ const starts=[[1,6],[0,7],[2,7],[3,7],[4,7],[5,7]];
+ ps.forEach((u,i)=>{
+  u.x=starts[i]?.[0]??1;u.y=starts[i]?.[1]??7;u.acted=false;u.hp=Math.max(1,u.hp);u.mp=u.maxMp;
+  if(!u.troop)u.troop=u.id==='guan'||u.id==='zhao'?'騎兵':u.id==='zhang'?'槍兵':u.id==='tian'?'弓兵':'歩兵';
+  if(!u.growth)u.growth={hp:4,atk:1,def:1,mp:1};
+ });
+ return ps;
+}
+
+
+
+
+
+function updateDestinyFlags(){
+ const z=document.getElementById('zhangFlagChip'),l=document.getElementById('liuFlagChip');
+ if(z){z.textContent='張飛：'+(zhangFeiAlive?'生存':'離脱');z.className='destinyChip '+(zhangFeiAlive?'destinyAlive':'destinyLost')}
+ if(l){l.textContent='劉備：'+(liuBeiAlive?'生存':'危篤');l.className='destinyChip '+(liuBeiAlive?'destinyAlive':'destinyLost')}
+}
+function updateStoryFlag(){
+ const chip=document.getElementById('storyFlagChip');if(!chip)return;
+ if(guanYuSaved===true){chip.textContent='歴史分岐：関羽生存';chip.className='storyFlag branchGood'}
+ else if(guanYuSaved===false){chip.textContent='歴史分岐：関羽敗走';chip.className='storyFlag branchBad'}
+ else {chip.textContent='歴史分岐：未確定';chip.className='storyFlag'}
+ updateDestinyFlags();
+}
+function updateMorale(delta=0){
+ morale=Math.max(0,Math.min(100,morale+delta));
+ const chip=document.getElementById('moraleChip');if(chip)chip.innerHTML=`士気：${morale} <span class="enemyMorale">敵${enemyMorale}</span>`;
+}
+function moraleMod(){return .85+(morale/100)*.3}
+function enemyMoraleMod(){return .85+(enemyMorale/100)*.3}
+function setupEnvironment(st){
+ currentWeather=st.weather||'sun';currentTime=st.time||'day';
+ const wc=document.getElementById('weatherChip'),tc=document.getElementById('timeChip'),wrap=document.querySelector('.boardWrap');
+ const names={sun:'晴',rain:'雨',fog:'霧',wind:'強風'};
+ if(wc)wc.textContent='天候：'+(names[currentWeather]||currentWeather);
+ if(tc)tc.textContent='時刻：'+(currentTime==='night'?'夜':'昼');
+ wrap.classList.toggle('weatherFog',currentWeather==='fog');
+ wrap.classList.toggle('nightMode',currentTime==='night');updateMorale(0);updateStoryFlag();
+}
+function objectiveForStage(){
+ const st=stages[stageIndex];
+ return st.objective||{type:'annihilate',text:'敵軍を全滅させる'};
+}
+function updateObjectiveUI(){
+ const o=objectiveForStage();
+ const el=document.getElementById('objectiveBox');
+ if(!el)return;
+ let t='勝利条件：'+o.text;if(o.type==='escort')t+='　護衛対象HP '+(escortUnit?escortUnit.hp+'/'+escortUnit.maxHp:'-');
+ if(o.type==='capture')t+=`　占領 ${capturedPoints.size}/${stages[stageIndex].capturePoints?.length||0}`;
+ if(o.type==='defend')t+=`（現在 TURN ${turn} / ${o.turns}）`;
+ if(o.type==='rescue'){const g=getUnit('guan');t+=g?`　関羽HP ${g.hp}/${g.maxHp}`:'';}
+ if(o.type==='survive')t+=`（現在 TURN ${turn} / ${o.turns}）`;
+ el.textContent=t;
+}
+function eligibleDeploy(players,index){
+ // From chapter 7 onward use deployment selection
+ if(index<6)return players;
+ if(!deploySelection.length)return players;
+ return players.filter(u=>deploySelection.includes(u.id));
+}
+function showChapterCurtain(text){
+ const c=document.getElementById('chapterCurtain');c.textContent=text;c.style.display='flex';c.style.opacity='0';
+ c.animate([{opacity:0},{opacity:1},{opacity:1},{opacity:0}],{duration:1100,easing:'ease-in-out'});
+ setTimeout(()=>c.style.display='none',1100);
+}
+function startStage(index,carryPlayers=null){
+ stageIndex=index;const st=stages[index];showChapterCurtain(st.title);
+ if(st.id===19&&guanYuSaved===false&&zhangFeiAlive){
+   // historical-pressure branch: chance mitigated by previous strong performance
+   const strong=(battleStats?.kills||0)>=5 || morale>=85;
+   if(!strong){zhangFeiAlive=false;}
+ }
+ terrain=st.terrain.map(r=>r.slice());turn=1;phase='player';mode='move';gameOver=false;selected=null;visitedEvents=new Set();inCamp=false;morale=100;enemyMorale=100;bossBonusClaimed=false;burningTiles={};capturedPoints=new Set();battleStats={turns:1,kills:0,damageTaken:0};triggeredAmbushes=new Set();triggeredTraps=new Set();
+ let players=preparePlayers(carryPlayers);
+ players=eligibleDeploy(players,index);
+ if(!zhangFeiAlive)players=players.filter(u=>u.id!=='zhang');
+ if(st.id===18){const g=players.find(u=>u.id==='guan');if(g){g.x=7;g.y=4}}
+ let enemyList=st.enemies.map(a=>a.slice());
+ if(st.id===19&&guanYuSaved===true&&yiLingPeace)enemyList=enemyList.slice(0,3);
+ if(st.id===8&&routeChoice==='south')enemyList=enemyList.slice(0,3);
+ if(st.id===8&&routeChoice==='north')money+=100;
+ units=[...players,...enemyList.map(makeEnemy)];
+ escortUnit=null;
+ if(st.escort){escortUnit=makeEscort(st.escort);units.push(escortUnit);}
+ document.getElementById('stageTitle').textContent=st.title;setupEnvironment(st);document.getElementById('result').classList.remove('show');document.getElementById('camp').classList.remove('show');
+ document.getElementById('log').innerHTML='';log('義勇軍、出陣！');showStory(st);render();updateObjectiveUI();saveGame();
+}
+function showStory(st){
+ document.getElementById('storyTitle').textContent=st.title.split(' ― ')[0];
+ document.getElementById('storyBody').innerHTML=st.intro.map(([n,t])=>`<p><span c
