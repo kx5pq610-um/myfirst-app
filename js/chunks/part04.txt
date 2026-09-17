@@ -1,0 +1,220 @@
+4,25,15,3,18,'歩兵']
+  ]
+ },
+ events:{
+  '0,4':{kind:'village',text:'老人「命あってこそ、志は受け継がれます。」',item:'気力薬'}
+ }
+},
+{
+ id:21,title:'第二十一章　第一次北伐 ― 祁山へ',reward:11500,
+ objective:{type:'capture',text:'中央・北東の2拠点を占領する'},
+ weather:'sun',time:'day',
+ capturePoints:[[4,3],[8,0]],
+ intro:[['諸葛亮','今こそ中原へ兵を進める時です。'],['趙雲','先鋒はお任せください。'],['劉備','皆の力で、ここまで来た。']],
+ terrain:[
+ ['mountain','pass','pass','mountain','mountain','pass','pass','fort','fort','mountain'],
+ ['mountain','pass','forest','pass','mountain','pass','forest','pass','fort','mountain'],
+ ['mountain','pass','plain','pass','pass','pass','plain','pass','pass','mountain'],
+ ['mountain','forest','plain','pass','fort','pass','plain','forest','pass','mountain'],
+ ['mountain','pass','pass','pass','pass','pass','pass','pass','pass','mountain'],
+ ['mountain','forest','plain','pass','mountain','pass','plain','forest','pass','mountain'],
+ ['mountain','pass','plain','pass','pass','pass','plain','pass','pass','mountain'],
+ ['mountain','pass','pass','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['aa1','魏軍騎兵A','騎',7,1,86,28,16,5,19,'騎兵'],
+  ['aa2','魏軍槍兵A','槍',8,4,88,27,17,3,19,'槍兵'],
+  ['aa3','魏軍弓兵A','弓',7,6,74,26,13,3,19,'弓兵'],
+  ['aa4','魏軍歩兵A','歩',6,3,90,26,18,3,19,'歩兵'],
+  ['aa5','魏将・郭淮','淮',9,0,118,31,20,4,20,'歩兵']
+ ],
+ reinforcements:{
+  5:[
+   ['aar1','魏軍増援騎兵','騎',9,7,76,27,14,5,19,'騎兵'],
+   ['aar2','魏軍増援弓兵','弓',0,0,66,25,12,3,19,'弓兵']
+  ]
+ },
+ events:{}
+},
+{
+ id:22,title:'第二十二章　街亭 ― 崩れる前線',reward:12500,
+ objective:{type:'survive',turns:8,text:'8ターン前線を維持する'},
+ weather:'fog',time:'day',
+ intro:[['諸葛亮','街亭を失えば補給線が断たれます。'],['関羽','守るべき場所を見誤ってはなりません。'],['張飛','なら俺が正面を支えてやる！']],
+ terrain:[
+ ['mountain','pass','pass','mountain','plain','plain','forest','fort','fort','mountain'],
+ ['mountain','pass','forest','pass','plain','mountain','forest','plain','fort','mountain'],
+ ['plain','pass','plain','pass','water','bridge','plain','plain','plain','plain'],
+ ['plain','forest','plain','pass','water','plain','forest','plain','plain','plain'],
+ ['plain','plain','plain','pass','bridge','plain','plain','forest','plain','plain'],
+ ['plain','forest','plain','pass','water','plain','mountain','plain','plain','plain'],
+ ['plain','plain','plain','pass','plain','plain','plain','fort','fort','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['ab1','魏軍騎兵A','騎',7,1,90,29,17,5,20,'騎兵'],
+  ['ab2','魏軍槍兵A','槍',8,4,92,28,18,3,20,'槍兵'],
+  ['ab3','魏軍弓兵A','弓',7,6,76,27,14,3,20,'弓兵'],
+  ['ab4','魏軍歩兵A','歩',6,3,94,27,19,3,20,'歩兵']
+ ],
+ reinforcements:{
+  3:[['abr1','魏軍増援A','騎',9,7,78,28,15,5,20,'騎兵']],
+  6:[['abr2','魏軍増援B','弓',0,0,68,26,13,3,20,'弓兵'],['abr3','魏軍増援C','槍',9,0,80,27,15,3,20,'槍兵']]
+ },
+ events:{}
+},
+{
+ id:23,title:'第二十三章　五丈原 ― 星落つる野',reward:14000,
+ objective:{type:'annihilate',text:'司馬懿軍を退ける'},
+ weather:'rain',time:'night',
+ intro:[['諸葛亮','ここが我らの正念場です。'],['劉備','孔明、無理はするな。志は一人で背負うものではない。'],['趙雲','最後まで、お供します。']],
+ terrain:[
+ ['plain','forest','plain','plain','mountain','plain','plain','fort','fort','plain'],
+ ['plain','forest','forest','plain','mountain','plain','forest','plain','fort','plain'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['plain','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','forest','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','fort','fort','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['ac1','魏軍騎兵A','騎',7,1,94,30,18,5,21,'騎兵'],
+  ['ac2','魏軍槍兵A','槍',8,4,96,29,19,3,21,'槍兵'],
+  ['ac3','魏軍弓兵A','弓',7,6,80,28,15,3,21,'弓兵'],
+  ['ac4','魏軍歩兵A','歩',6,3,98,28,20,3,21,'歩兵'],
+  ['ac5','司馬懿','懿',9,0,130,34,22,4,22,'軍師']
+ ],
+ reinforcements:{
+  5:[['acr1','魏軍精鋭騎兵','騎',9,7,84,29,16,5,21,'騎兵'],['acr2','魏軍精鋭弓兵','弓',0,0,72,27,14,3,21,'弓兵']]
+ },
+ events:{}
+},
+{
+ id:24,title:'最終章　洛陽 ― 英傑の志',reward:0,
+ objective:{type:'capture',text:'洛陽宮門を占領する'},
+ weather:'sun',time:'day',
+ capturePoints:[[9,0]],
+ intro:[['劉備','これが最後の戦いだ。'],['諸葛亮','ここまで積み重ねた全てが、今日につながっています。'],['関羽','兄者、参りましょう。'],['張飛','最後まで派手にやろうぜ！']],
+ terrain:[
+ ['fort','fort','fort','plain','mountain','plain','fort','fort','fort','fort'],
+ ['fort','plain','plain','forest','mountain','plain','forest','plain','fort','fort'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['village','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','plain','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['ad1','魏近衛騎兵','騎',7,1,104,32,19,5,22,'騎兵'],
+  ['ad2','魏近衛槍兵','槍',8,4,106,31,20,3,22,'槍兵'],
+  ['ad3','魏近衛弓兵','弓',7,6,88,30,16,3,22,'弓兵'],
+  ['ad4','魏近衛歩兵','歩',6,3,108,30,21,3,22,'歩兵'],
+  ['ad5','司馬懿・最終軍','懿',9,0,150,36,24,4,23,'軍師']
+ ],
+ reinforcements:{
+  6:[['adr1','洛陽増援騎兵','騎',9,7,90,30,17,5,22,'騎兵'],['adr2','洛陽増援槍兵','槍',0,0,92,30,18,3,22,'槍兵']]
+ },
+ events:{}
+},
+{
+ id:99,title:'試練の戦場 ― 天下無双の宴',reward:20000,
+ objective:{type:'annihilate',text:'歴代強敵をすべて撃破する'},
+ weather:'sun',time:'day',
+ challenge:true,
+ intro:[['劉備','これは戦ではない。我ら自身の力を確かめる試練だ。'],['関羽','相手に不足なし。'],['張飛','まとめてかかってこい！']],
+ terrain:[
+ ['fort','plain','plain','forest','plain','plain','forest','plain','plain','fort'],
+ ['plain','plain','forest','plain','mountain','mountain','plain','forest','plain','plain'],
+ ['plain','water','bridge','plain','plain','plain','plain','bridge','water','plain'],
+ ['plain','plain','plain','forest','fort','fort','forest','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','forest','plain'],
+ ['plain','water','bridge','plain','plain','plain','plain','bridge','water','plain'],
+ ['plain','plain','forest','plain','mountain','mountain','plain','forest','plain','plain'],
+ ['fort','plain','plain','plain','plain','plain','plain','plain','plain','fort']
+ ],
+ enemies:[
+  ['c1','呂布・幻','呂',9,0,150,36,22,6,24,'騎兵'],
+  ['c2','司馬懿・幻','懿',8,2,130,34,21,4,24,'軍師'],
+  ['c3','夏侯惇・幻','惇',9,7,125,33,21,5,24,'騎兵'],
+  ['c4','陸遜・幻','遜',0,0,120,32,20,4,24,'軍師'],
+  ['c5','華雄・幻','華',0,7,135,35,22,5,24,'騎兵']
+ ],
+ events:{}
+}
+];
+
+const shopItems=[
+ {name:'鉄の剣',price:220,type:'weapon',atk:2,desc:'攻撃+2'},
+ {name:'鋼の剣',price:420,type:'weapon',atk:4,desc:'攻撃+4'},
+ {name:'革の鎧',price:200,type:'armor',def:2,desc:'防御+2'},
+ {name:'鉄の鎧',price:380,type:'armor',def:4,desc:'防御+4'},
+ {name:'傷薬',price:80,type:'item',desc:'兵力を12回復'},
+ {name:'気力薬',price:100,type:'item',desc:'気力を6回復'}
+];
+
+let stageIndex=0,terrain=[],units=[],selected=null,phase='player',turn=1,mode='move',gameOver=false;
+let visitedEvents=new Set(),money=300,completedStages=0,inCamp=false;
+let pendingDuel=null,stageChoiceDone={},audioOn=true,lastSaveSlot=1,trioTriggered=false,deploySelection=[],routeChoice=null,currentWeather='sun',currentTime='day',morale=100,enemyMorale=100,escortUnit=null,bossBonusClaimed=false,burningTiles={},capturedPoints=new Set(),battleStats={turns:1,kills:0,damageTaken:0},triggeredAmbushes=new Set(),triggeredTraps=new Set(),guanYuSaved=null,defendFailed=false,zhangFeiAlive=true,liuBeiAlive=true,yiLingPeace=false,finalEnding=null,difficulty='normal',metaStats={runs:0,totalKills:0,totalDamage:0,bestGrade:'D',endings:[]};
+
+function basePlayers(){
+ return [
+  {id:'liu',side:'player',name:'劉備',char:'劉',x:1,y:6,hp:24,maxHp:24,mp:10,maxMp:10,atkBase:8,defBase:5,move:4,lv:1,exp:0,acted:false,role:'君主',troop:'歩兵',growth:{hp:4,atk:1,def:2,mp:1},items:['傷薬'],weapon:null,armor:null},
+  {id:'guan',side:'player',name:'関羽',char:'関',x:0,y:7,hp:28,maxHp:28,mp:8,maxMp:8,atkBase:10,defBase:6,move:5,lv:1,exp:0,acted:false,role:'騎将',troop:'騎兵',growth:{hp:5,atk:2,def:1,mp:1},items:['傷薬'],weapon:null,armor:null},
+  {id:'zhang',side:'player',name:'張飛',char:'張',x:2,y:7,hp:30,maxHp:30,mp:6,maxMp:6,atkBase:11,defBase:4,move:4,lv:1,exp:0,acted:false,role:'豪傑',troop:'槍兵',growth:{hp:6,atk:2,def:1,mp:0},items:['傷薬'],weapon:null,armor:null}
+ ];
+}
+function zhaoUnit(){
+ return {id:'zhao',side:'player',name:'趙雲',char:'趙',x:3,y:7,hp:27,maxHp:27,mp:9,maxMp:9,atkBase:10,defBase:6,move:5,lv:3,exp:0,acted:false,role:'白馬義従',troop:'騎兵',growth:{hp:5,atk:2,def:2,mp:1},items:['傷薬'],weapon:null,armor:null}
+}
+function tianUnit(){
+ return {id:'tian',side:'player',name:'田豫',char:'田',x:4,y:7,hp:25,maxHp:25,mp:11,maxMp:11,atkBase:9,defBase:5,move:4,lv:4,exp:0,acted:false,role:'弓将',troop:'弓兵',growth:{hp:4,atk:2,def:1,mp:2},items:['傷薬'],weapon:null,armor:null}
+}
+
+function zhugeUnit(){
+ return {id:'zhuge',side:'player',name:'諸葛亮',char:'亮',x:5,y:7,hp:24,maxHp:24,mp:20,maxMp:20,atkBase:7,defBase:5,move:4,lv:8,exp:0,acted:false,role:'軍師',troop:'軍師',growth:{hp:3,atk:1,def:1,mp:3},items:['気力薬'],weapon:null,armor:null};
+}
+function makeEscort(e){
+ return {id:'escort',side:'player',name:e.name,char:e.char,x:e.x,y:e.y,hp:e.hp,maxHp:e.maxHp,mp:0,maxMp:0,atkBase:0,defBase:3,move:e.move,lv:1,exp:0,acted:false,role:'護衛対象',troop:'民間人',growth:{hp:0,atk:0,def:0,mp:0},items:[],weapon:null,armor:null,isEscort:true};
+}
+function makeEnemy(a){
+ const [id,name,char,x,y,hp,atkBase,defBase,move,lv,role]=a;
+ const hero=difficulty==='hero'?1.22:1;
+ const ehp=Math.round(hp*hero),eatk=Math.round(atkBase*hero),edef=Math.round(defBase*hero);
+ return {id,side:'enemy',name,char,x,y,hp:ehp,maxHp:ehp,mp:0,maxMp:0,atkBase:eatk,defBase:edef,move,lv,exp:0,acted:false,role,troop:role.includes('弓')?'弓兵':role.includes('槍')?'槍兵':role.includes('騎')?'騎兵':'歩兵',growth:{hp:4,atk:1,def:1,mp:0},items:[],weapon:null,armor:null};
+}
+function atk(u){return u.atkBase+(u.weapon?.atk||0)+(u.tempAtk||0)}
+function def(u){return u.defBase+(u.armor?.def||0)+(u.guardTurns>0?3:0)}
+function attackRange(u){
+ let r=['弓兵','弩兵','連弩兵'].includes(u.troop)?2+(u.bonusRange||0):1;
+ if(currentWeather==='fog'&&r>1)r=Math.max(1,r-1);
+ return r;
+}
+function statusText(u){
+ const s=[];
+ if(u.burnTurns>0)s.push('🔥炎上');
+ if(u.poisonTurns>0)s.push('☠毒');
+ if(u.guardTurns>0)s.push('🛡堅守');
+ return s;
+}
+function showCutIn(u,line){
+ const box=document.getElementById('cutIn');
+ document.getElementById('cutPortrait').textContent=u.char||u.name?.[0]||'?';
+ document.getElementById('cutName').textContent=u.name;
+ document.getElementById('cutLine').textContent=line;
+ box.classList.remove('show');void box.offsetWidth;box.classList.add('show');
+ setTimeout(()=>box.classList.remove('show'),720);
+}
+function applyEndTurnStatuses(u){
+ if(u.hp<=0)return;
+ if(u.burnTurns>0){
+  const d=Math.max(2,Math.round(u.maxHp*.08));u.hp=Math.max(0,u.hp-d);u.burnTurns--;
+  log(`🔥 ${u.name}は炎上で${d}のダメージ。`,'bad');
+ }
+ if(u.poisonTurns>0){
+  const d=Math.max(1,Math.round(u.maxHp*.06));u.hp=Math.max(0,u.hp-d);u.poisonTurns--;
+  log(`☠ ${u.name}は毒で${d}のダメージ。`,'bad');
+ }
+ if(u.guardTurns>0)u.guardTurns--;
+}
