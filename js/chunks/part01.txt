@@ -1,0 +1,189 @@
+const COLS=10,ROWS=8;
+const terrainJP={plain:'平地',forest:'森',mountain:'山',water:'川',village:'村',fort:'砦',bridge:'橋',chest:'宝',ship:'船',pass:'山道'};
+const terrainCost={plain:1,forest:2,mountain:99,water:99,village:1,fort:1,bridge:1,chest:1,ship:1,pass:2};
+
+const stages=[
+{
+ id:1,title:'第一章　義勇軍、起つ ― 黄巾の乱',reward:260,
+ intro:[['劉備','乱世を前に、黙って見ているわけにはいかぬ。'],['関羽','兄者の志、この関羽が支えましょう。'],['張飛','よし！ 黄巾のやつらを蹴散らしてやろうぜ！']],
+ terrain:[
+ ['plain','plain','forest','plain','plain','mountain','plain','plain','plain','plain'],
+ ['plain','forest','forest','plain','plain','mountain','plain','village','plain','plain'],
+ ['plain','plain','plain','plain','water','water','plain','plain','forest','plain'],
+ ['plain','plain','mountain','plain','water','plain','plain','forest','forest','plain'],
+ ['village','plain','plain','plain','plain','plain','plain','plain','plain','plain'],
+ ['plain','forest','plain','mountain','plain','plain','forest','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','forest','forest','plain','village','plain'],
+ ['plain','plain','mountain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['e1','黄巾兵A','黄',7,1,16,6,3,3,1,'歩兵'],
+  ['e2','黄巾兵B','黄',8,2,16,6,3,3,1,'歩兵'],
+  ['e3','黄巾兵C','黄',8,5,18,7,3,3,1,'歩兵'],
+  ['e4','黄巾頭目','頭',9,0,25,8,4,3,2,'頭目']
+ ],
+ events:{
+  '7,1':{kind:'village',text:'村人「義勇軍の皆様、どうかお使いください！」',item:'傷薬'},
+  '0,4':{kind:'village',text:'老人「森では足を取られる。平地を進むとよいぞ。'},
+  '8,6':{kind:'village',text:'村人「気力を整えてください。」',mp:4}
+ }
+},
+{
+ id:2,title:'第二章　関門の戦い ― 反乱軍の砦',reward:360,
+ intro:[['劉備','賊軍は関門に集結している。ここを抜けねば民を救えぬ。'],['関羽','砦の敵は守りが固い。策略を交えて攻めるのがよいでしょう。'],['張飛','正面からぶち抜けば早いだろ！']],
+ terrain:[
+ ['plain','forest','plain','plain','mountain','mountain','plain','plain','fort','fort'],
+ ['plain','forest','plain','plain','plain','mountain','plain','forest','fort','fort'],
+ ['plain','plain','plain','water','plain','plain','plain','forest','plain','plain'],
+ ['village','plain','plain','bridge','plain','forest','plain','plain','plain','plain'],
+ ['plain','plain','forest','water','plain','forest','mountain','plain','plain','plain'],
+ ['plain','forest','forest','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','mountain','plain','forest','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['f1','関門兵A','関',8,0,22,8,5,3,2,'守備兵'],
+  ['f2','関門兵B','関',9,1,22,8,5,3,2,'守備兵'],
+  ['f3','反乱兵A','兵',7,3,20,8,4,3,2,'歩兵'],
+  ['f4','反乱兵B','兵',8,5,20,8,4,3,2,'歩兵'],
+  ['f5','敵将・程遠志','将',9,0,34,11,6,3,3,'敵将']
+ ],
+ events:{
+  '0,3':{kind:'village',text:'村人「砦の敵には火計が効くと聞きました。」',item:'気力薬'},
+  '8,5':{kind:'village',text:'若者「義勇軍に加わりたい者も増えています。」',item:'傷薬'}
+ }
+},
+{
+ id:3,title:'第三章　白馬の若武者 ― 趙雲との出会い',reward:520,
+ intro:[['劉備','北の街道で賊が村を襲っているという。急ごう。'],['関羽','敵将は腕の立つ者。油断なさらぬよう。'],['張飛','腕が立つってんなら、俺が相手だ！']],
+ terrain:[
+ ['plain','plain','forest','plain','plain','plain','plain','mountain','fort','fort'],
+ ['plain','forest','forest','plain','water','water','bridge','plain','fort','fort'],
+ ['plain','plain','plain','plain','water','plain','plain','plain','plain','plain'],
+ ['village','plain','mountain','plain','bridge','plain','forest','plain','plain','plain'],
+ ['plain','plain','plain','plain','water','plain','forest','forest','plain','plain'],
+ ['plain','forest','chest','plain','water','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['g1','賊兵A','賊',7,2,24,9,5,3,3,'歩兵'],
+  ['g2','賊兵B','賊',8,4,24,9,5,3,3,'歩兵'],
+  ['g3','賊兵C','賊',8,6,24,9,5,3,3,'歩兵'],
+  ['g4','賊将・張武','将',9,0,40,13,7,3,4,'敵将']
+ ],
+ events:{
+  '0,3':{kind:'village',text:'村人「白馬に乗った若武者が、賊から我々を守ってくれました。」'},
+  '2,5':{kind:'chest',text:'宝箱を開けた！',item:'鋼の剣'},
+  '8,5':{kind:'village',text:'趙雲「民を思うその志、見届けました。私も力を貸しましょう。」',recruit:'zhao'}
+ }
+},
+{
+ id:4,title:'第四章　徐州への道 ― 弓兵との共闘',reward:650,
+ intro:[['劉備','徐州へ向かう街道が敵兵に封鎖されている。民の道を開こう。'],['趙雲','敵には騎兵が多いようです。槍兵を前に出すのがよいでしょう。'],['関羽','弓兵の援護があれば、戦いも有利になりましょう。']],
+ choice:{title:'進軍方針',text:'街道へ入る前に、どちらの方針を取りますか？'},
+ terrain:[
+ ['plain','plain','forest','plain','plain','mountain','plain','plain','fort','fort'],
+ ['plain','forest','forest','plain','plain','mountain','plain','plain','fort','fort'],
+ ['plain','plain','plain','plain','water','bridge','plain','forest','plain','plain'],
+ ['village','plain','plain','plain','water','plain','plain','forest','plain','plain'],
+ ['plain','plain','mountain','plain','bridge','plain','plain','plain','plain','plain'],
+ ['plain','forest','plain','plain','water','plain','forest','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['h1','騎兵A','騎',7,1,28,11,6,5,4,'騎兵'],
+  ['h2','騎兵B','騎',8,3,28,11,6,5,4,'騎兵'],
+  ['h3','弓兵A','弓',8,5,23,10,4,3,4,'弓兵'],
+  ['h4','槍兵A','槍',7,6,30,10,7,3,4,'槍兵'],
+  ['h5','敵将・鄧茂','将',9,0,44,14,8,4,5,'騎兵']
+ ],
+ events:{
+  '0,3':{kind:'village',text:'田豫「劉備殿の志、聞き及んでおります。弓で援護しましょう。」',recruit:'tian'},
+  '8,5':{kind:'village',text:'村人「これを戦の足しにしてください。」',item:'気力薬'}
+ }
+},
+{
+ id:5,title:'第五章　虎牢関前哨戦 ― 群雄の影',reward:850,
+ intro:[['劉備','強敵が待つ。だが我らは、ここまで共に戦ってきた。'],['張飛','相手が誰だろうと関係ねえ！ 正面から行くぞ！'],['田豫','敵の弓兵には騎兵を、騎兵には槍兵を当てましょう。']],
+ terrain:[
+ ['fort','fort','plain','plain','mountain','plain','plain','fort','fort','fort'],
+ ['fort','plain','plain','forest','mountain','plain','forest','plain','fort','fort'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['village','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','plain','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['i1','西涼騎兵A','騎',7,1,34,13,7,5,5,'騎兵'],
+  ['i2','西涼騎兵B','騎',8,4,34,13,7,5,5,'騎兵'],
+  ['i3','西涼弓兵A','弓',7,6,27,12,5,3,5,'弓兵'],
+  ['i4','西涼槍兵A','槍',8,2,36,12,8,3,5,'槍兵'],
+  ['i5','西涼歩兵A','歩',6,3,38,12,9,3,5,'歩兵'],
+  ['i6','敵将・華雄','華',9,0,55,17,10,5,6,'騎兵']
+ ],
+ events:{
+  '0,4':{kind:'village',text:'村人「関の守りは堅い。弓兵で削ってから攻めるとよいでしょう。」',item:'傷薬'},
+  '8,6':{kind:'village',text:'旅人「この先に名だたる豪傑が集まっているそうです。」',mp:5}
+ }
+},
+{
+ id:6,title:'第六章　虎牢関 ― 三英戦呂布',reward:1200,
+ intro:[['劉備','虎牢関……ついにここまで来た。'],['関羽','敵将・呂布。天下無双と名高い武将です。'],['張飛','天下無双だと？ なら三人まとめて相手してやる！']],
+ terrain:[
+ ['fort','fort','fort','plain','mountain','plain','fort','fort','fort','fort'],
+ ['fort','plain','plain','forest','mountain','plain','forest','plain','fort','fort'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['village','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','plain','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['j1','虎牢騎兵A','騎',7,1,38,15,8,5,6,'騎兵'],
+  ['j2','虎牢槍兵A','槍',7,4,40,14,9,3,6,'槍兵'],
+  ['j3','虎牢弓兵A','弓',8,6,32,14,6,3,6,'弓兵'],
+  ['j4','虎牢歩兵A','歩',6,3,42,14,10,3,6,'歩兵'],
+  ['j5','虎牢騎兵B','騎',8,2,38,15,8,5,6,'騎兵'],
+  ['j6','呂布','呂',9,0,90,22,13,6,8,'騎兵']
+ ],
+ events:{
+  '0,4':{kind:'village',text:'村人「呂布は恐ろしい強さです。どうかご無事で。」',item:'気力薬'},
+  '8,6':{kind:'village',text:'兵士「三将がそろって呂布に挑めば、あるいは……。」',item:'傷薬'}
+ }
+},
+{
+ id:7,title:'第七章　洛陽炎上 ― 退く董卓軍',reward:1450,
+ objective:{type:'reach',text:'劉備が北東の砦（9,0）へ到達する'},
+ intro:[['劉備','洛陽に火が放たれた……民を救いながら追撃する。'],['関羽','敵は退却しつつあります。深追いにはご注意を。'],['張飛','逃げるなら追うまでだ！']],
+ terrain:[
+ ['plain','plain','forest','plain','plain','mountain','plain','plain','fort','fort'],
+ ['plain','forest','forest','plain','plain','mountain','plain','plain','fort','fort'],
+ ['plain','plain','plain','plain','water','bridge','plain','forest','plain','plain'],
+ ['village','plain','plain','plain','water','plain','plain','forest','plain','plain'],
+ ['plain','plain','mountain','plain','bridge','plain','plain','plain','plain','plain'],
+ ['plain','forest','plain','plain','water','plain','forest','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['k1','董卓軍騎兵A','騎',7,1,42,16,9,5,7,'騎兵'],
+  ['k2','董卓軍槍兵A','槍',8,4,44,15,10,3,7,'槍兵'],
+  ['k3','董卓軍弓兵A','弓',7,6,36,15,7,3,7,'弓兵'],
+  ['k4','董卓軍歩兵A','歩',6,3,46,15,11,3,7,'歩兵']
+ ],
+ reinforcements:{
+  4:[
+   ['kr1','追撃騎兵','騎',9,7,38,15,8,5,7,'騎兵'],
+   ['kr2','追撃弓兵','弓',8,7,32,14,6,3,7,'弓兵']
+  ]
+ },
+ events:{
+  '0,3':{kind:'village',text:'民「洛陽から逃れてきました。これをお役立てください。」',item:'傷薬'},
+  '8,5':{kind:'village',text:'老人「敵の増援が後方から来ると聞きました。」',item:'気力薬'}
+ }
+},
