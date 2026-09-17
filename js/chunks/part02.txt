@@ -1,0 +1,203 @@
+追撃弓兵','弓',8,7,32,14,6,3,7,'弓兵']
+  ]
+ },
+ events:{
+  '0,3':{kind:'village',text:'民「洛陽から逃れてきました。これをお役立てください。」',item:'傷薬'},
+  '8,5':{kind:'village',text:'老人「敵の増援が後方から来ると聞きました。」',item:'気力薬'}
+ }
+},
+{
+ id:8,title:'第八章　分かれ道 ― 北路か南路か',reward:1700,
+ objective:{type:'survive',turns:8,text:'8ターン生存する'},
+ intro:[['劉備','敵の包囲を抜けるまで、ここを守り抜く。'],['趙雲','正面の敵だけでなく、増援にも備えましょう。'],['田豫','弓兵は後方に置き、近づく敵を削ります。']],
+ terrain:[
+ ['fort','plain','plain','forest','mountain','plain','plain','plain','fort','fort'],
+ ['plain','plain','forest','forest','mountain','plain','forest','plain','plain','fort'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['village','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','plain','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['m1','追討騎兵A','騎',7,1,44,16,9,5,7,'騎兵'],
+  ['m2','追討槍兵A','槍',8,4,46,16,10,3,7,'槍兵'],
+  ['m3','追討弓兵A','弓',7,6,38,15,7,3,7,'弓兵'],
+  ['m4','追討歩兵A','歩',6,3,48,15,11,3,7,'歩兵']
+ ],
+ reinforcements:{
+  3:[
+   ['mr1','増援騎兵A','騎',9,7,40,16,8,5,7,'騎兵'],
+   ['mr2','増援歩兵A','歩',0,0,42,15,9,3,7,'歩兵']
+  ],
+  6:[
+   ['mr3','増援弓兵B','弓',9,6,35,15,7,3,7,'弓兵'],
+   ['mr4','増援槍兵B','槍',0,1,43,16,9,3,7,'槍兵']
+  ]
+ },
+ events:{
+  '0,4':{kind:'village',text:'村人「この村を守ってくださりありがとうございます。」',item:'傷薬'},
+  '8,6':{kind:'village',text:'若者「もう少しで包囲を抜けられます！」',mp:5}
+ }
+},
+{
+ id:9,title:'第九章　三顧の礼 ― 臥龍、出廬す',reward:2100,
+ objective:{type:'reach',text:'劉備が諸葛亮の庵（8,1）へ到達する'},
+ weather:'fog',time:'day',
+ intro:[['劉備','天下を安んずるには、知略に秀でた人物が必要だ。'],['関羽','水鏡先生が申された「臥龍」を訪ねましょう。'],['張飛','また留守じゃねえだろうな……。']],
+ terrain:[
+ ['plain','plain','forest','forest','mountain','mountain','plain','plain','plain','plain'],
+ ['plain','forest','forest','plain','plain','mountain','plain','plain','village','plain'],
+ ['plain','plain','water','bridge','plain','plain','forest','forest','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','forest','plain','plain','plain'],
+ ['village','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','plain','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['n1','山賊A','賊',6,3,42,15,8,3,8,'歩兵'],
+  ['n2','山賊B','賊',7,5,40,15,7,4,8,'騎兵'],
+  ['n3','山賊弓兵','弓',8,6,34,14,6,3,8,'弓兵']
+ ],
+ events:{
+  '8,1':{kind:'village',text:'諸葛亮「将軍の志、よく分かりました。微力ながら、お力添えいたしましょう。」',recruit:'zhuge'},
+  '0,4':{kind:'village',text:'農夫「霧の日は遠くが見えません。弓兵の射程も活かしにくいでしょう。」',item:'気力薬'}
+ }
+},
+{
+ id:10,title:'第十章　博望坡 ― 臥龍の初陣',reward:2600,
+ objective:{type:'annihilate',text:'敵軍を全滅させる'},
+ weather:'rain',time:'night',
+ intro:[['諸葛亮','敵は我らを侮っております。地形と天候を利用しましょう。'],['劉備','軍師、策を任せる。'],['張飛','雨の中で火計だと？ 本当に燃えるのか？']],
+ terrain:[
+ ['forest','forest','plain','plain','mountain','plain','plain','plain','fort','fort'],
+ ['forest','plain','plain','forest','mountain','plain','forest','plain','fort','fort'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['plain','forest','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['village','plain','bridge','plain','forest','plain','plain','forest','plain','plain'],
+ ['plain','plain','water','plain','plain','plain','mountain','plain','plain','plain'],
+ ['plain','forest','plain','plain','plain','plain','plain','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['p1','夏侯軍騎兵A','騎',7,1,48,18,10,5,9,'騎兵'],
+  ['p2','夏侯軍槍兵A','槍',8,4,50,17,11,3,9,'槍兵'],
+  ['p3','夏侯軍弓兵A','弓',7,6,42,17,8,3,9,'弓兵'],
+  ['p4','夏侯軍歩兵A','歩',6,3,52,17,12,3,9,'歩兵'],
+  ['p5','敵将・夏侯惇','惇',9,0,68,21,13,5,10,'騎兵']
+ ],
+ reinforcements:{
+  5:[
+   ['pr1','曹軍増援騎兵','騎',9,7,46,18,9,5,9,'騎兵'],
+   ['pr2','曹軍増援弓兵','弓',0,0,38,16,7,3,9,'弓兵']
+  ]
+ },
+ events:{
+  '0,4':{kind:'village',text:'村人「夜道では敵の動きが見えにくいでしょう。」',item:'傷薬'},
+  '8,6':{kind:'village',text:'兵士「諸葛軍師の策に従えば勝てるはずです。」',mp:6}
+ }
+},
+{
+ id:11,title:'第十一章　長坂坡 ― 民を守り抜け',reward:3000,
+ objective:{type:'escort',text:'民間人を南西の退却地点（0,7）まで護衛する'},
+ weather:'sun',time:'day',
+ intro:[['劉備','民を置いては行けぬ。必ず守り抜く。'],['趙雲','私が前へ出ます。追手は任せてください。'],['諸葛亮','退却路を確保しつつ、敵の足を止めましょう。']],
+ terrain:[
+ ['plain','plain','forest','plain','plain','mountain','plain','plain','plain','plain'],
+ ['plain','forest','forest','plain','plain','mountain','plain','plain','fort','plain'],
+ ['plain','plain','plain','plain','water','bridge','plain','forest','plain','plain'],
+ ['plain','forest','plain','plain','water','plain','plain','forest','plain','plain'],
+ ['plain','plain','mountain','plain','bridge','plain','plain','plain','plain','plain'],
+ ['plain','forest','plain','plain','water','plain','forest','plain','village','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain'],
+ ['plain','plain','plain','plain','plain','plain','plain','plain','plain','plain']
+ ],
+ enemies:[
+  ['q1','曹軍騎兵A','騎',7,1,52,19,10,5,10,'騎兵'],
+  ['q2','曹軍騎兵B','騎',8,3,52,19,10,5,10,'騎兵'],
+  ['q3','曹軍弓兵A','弓',7,6,44,17,8,3,10,'弓兵'],
+  ['q4','曹軍槍兵A','槍',6,4,54,18,11,3,10,'槍兵'],
+  ['q5','追撃将・文聘','聘',9,0,72,22,13,5,11,'騎兵']
+ ],
+ reinforcements:{
+  4:[
+   ['qr1','追撃騎兵C','騎',9,7,46,18,9,5,10,'騎兵'],
+   ['qr2','追撃弓兵B','弓',8,7,40,17,7,3,10,'弓兵']
+  ]
+ },
+ escort:{name:'民間人',char:'民',x:4,y:6,hp:28,maxHp:28,move:2},
+ events:{
+  '8,5':{kind:'village',text:'村人「この道を西へ抜ければ退却できます。」',item:'傷薬'}
+ }
+},
+{
+ id:12,title:'第十二章　赤壁前夜 ― 連環の計',reward:3600,
+ objective:{type:'annihilate',text:'敵軍を全滅させる'},
+ weather:'fog',time:'night',
+ intro:[['諸葛亮','ここでは力よりも連携が重要です。'],['関羽','霧の中では単独行動を避けましょう。'],['張飛','なら、まとめて叩けばいいってことだな！']],
+ terrain:[
+ ['water','water','bridge','plain','plain','plain','plain','bridge','water','water'],
+ ['water','plain','plain','forest','plain','plain','forest','plain','plain','water'],
+ ['bridge','plain','plain','plain','mountain','mountain','plain','plain','plain','bridge'],
+ ['plain','forest','plain','plain','plain','plain','plain','forest','plain','plain'],
+ ['plain','plain','plain','plain','forest','plain','plain','plain','plain','plain'],
+ ['bridge','plain','forest','plain','plain','plain','forest','plain','plain','bridge'],
+ ['water','plain','plain','plain','plain','plain','plain','plain','plain','water'],
+ ['water','water','bridge','plain','plain','plain','plain','bridge','water','water']
+ ],
+ enemies:[
+  ['r1','曹軍騎兵A','騎',7,1,56,20,11,5,11,'騎兵'],
+  ['r2','曹軍槍兵A','槍',8,4,58,19,12,3,11,'槍兵'],
+  ['r3','曹軍弓兵A','弓',7,6,46,18,9,3,11,'弓兵'],
+  ['r4','曹軍歩兵A','歩',6,3,60,18,13,3,11,'歩兵'],
+  ['r5','敵将・曹仁','仁',9,3,78,23,14,4,12,'歩兵']
+ ],
+ reinforcements:{
+  5:[
+   ['rr1','曹軍増援騎兵','騎',0,7,50,19,10,5,11,'騎兵'],
+   ['rr2','曹軍増援槍兵','槍',9,7,52,19,11,3,11,'槍兵']
+  ]
+ },
+ events:{
+  '1,1':{kind:'village',text:'斥候「霧の中では、味方同士の連携が鍵です。」',item:'気力薬'}
+ }
+},
+{
+ id:13,title:'第十三章　赤壁の戦い ― 炎、長江を覆う',reward:4300,
+ objective:{type:'annihilate',text:'敵軍を全滅させる'},
+ weather:'wind',time:'night',
+ naval:true,
+ intro:[['諸葛亮','東南の風が吹きました。今こそ火計の時です。'],['劉備','連合軍の勝敗、この一戦にかかっている。'],['関羽','火の手に巻かれぬよう、進路を見極めましょう。']],
+ terrain:[
+ ['water','ship','ship','water','water','ship','ship','water','water','water'],
+ ['ship','ship','ship','ship','water','ship','ship','ship','water','water'],
+ ['water','ship','water','ship','ship','ship','water','ship','ship','water'],
+ ['water','ship','ship','ship','water','ship','ship','ship','water','water'],
+ ['water','water','ship','ship','ship','ship','water','ship','ship','water'],
+ ['water','ship','ship','water','ship','ship','ship','ship','water','water'],
+ ['water','ship','water','water','ship','ship','ship','water','water','water'],
+ ['water','water','water','ship','ship','ship','water','water','water','water']
+ ],
+ enemies:[
+  ['s1','曹軍水兵A','兵',7,1,58,20,10,3,12,'歩兵'],
+  ['s2','曹軍水兵B','兵',8,3,58,20,10,3,12,'歩兵'],
+  ['s3','曹軍弓兵A','弓',6,5,50,19,8,3,12,'弓兵'],
+  ['s4','曹軍騎兵A','騎',5,2,62,21,11,4,12,'騎兵'],
+  ['s5','敵将・蔡瑁','蔡',7,6,82,24,14,4,13,'歩兵']
+ ],
+ events:{}
+},
+{
+ id:14,title:'第十四章　荊州争奪 ― 城を奪え',reward:5000,
+ objective:{type:'capture',text:'北東・南東の2拠点を占領する'},
+ weather:'sun',time:'day',
+ capturePoints:[[8,0],[8,6]],
+ intro:[['劉備','荊州を得れば、民を守る基盤となる。'],['諸葛亮','二つの拠点を同時に押さえるのが肝要です。'],['趙雲','敵の増援が来る前に制圧しましょう。']],
+ terrain:[
+ ['plain','plain','forest','plain','mountain','plain','plain','fort','fort','plain'],
+ ['plain','forest','forest','plain','mountain','plain','forest','plain','fort','plain'],
+ ['plain','plain','water','bridge','plain','plain','forest','plain','plain','plain'],
+ ['village','plain','water','plain','plain','mountain','plain','plain','plain','plain'],
+ ['plain','plain','bridge','plain','forest','plain','plain','forest','plain','plain'
