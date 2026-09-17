@@ -1,0 +1,141 @@
+lass="speaker">${n}</span>「${t}」</p>`).join('')+'<p class="small">勝利条件：敵軍を全滅させる<br>敗北条件：劉備が倒れる</p>';
+ document.getElementById('story').classList.add('show');
+ if(st.id===6){setTimeout(()=>{sfx('boss');combatFx('呂布、出陣！');log('⚔ 天下無双・呂布が虎牢関に立ちはだかる！','boss')},350)}
+}
+document.getElementById('storyBtn').onclick=()=>{
+ document.getElementById('story').classList.remove('show');
+ const st=stages[stageIndex];
+ if(st.id===19&&!stageChoiceDone[stageIndex]){
+  const opts=guanYuSaved===true?[
+    {label:'呉との和議を探る ― 戦闘難度低下',fn:()=>{yiLingPeace=true;stageChoiceDone[stageIndex]='peace';enemyMorale=75;log('選択：和議を探る。呉軍の士気が低下した。','info');closeChoice();saveGame()}},
+    {label:'荊州の決着をつける ― 戦功報酬増加',fn:()=>{yiLingPeace=false;stageChoiceDone[stageIndex]='fight';money+=500;log('選択：決戦。軍資金+500。','info');closeChoice();saveGame()}}
+  ]:[
+    {label:'復讐戦を続ける ― 攻撃+2',fn:()=>{stageChoiceDone[stageIndex]='revenge';units.filter(u=>u.side==='player').forEach(u=>u.tempAtk=(u.tempAtk||0)+2);log('選択：復讐戦。全軍の攻撃が一時強化。','info');closeChoice();saveGame()}},
+    {label:'軍師に任せて撤退路を確保 ― 防御重視',fn:()=>{stageChoiceDone[stageIndex]='withdraw';units.filter(u=>u.side==='player').forEach(u=>u.guardTurns=3);log('選択：撤退路確保。全軍が堅守状態。','info');closeChoice();saveGame()}}
+  ];
+  openChoice('夷陵の岐路',guanYuSaved===true?'関羽は生還した。呉との関係をどうする？':'関羽を失った怒りの中、劉備は決断を迫られる。',opts);
+  return;
+ }
+ if(st.choice&&!stageChoiceDone[stageIndex]){
+  openChoice(st.choice.title,st.choice.text,[
+   {label:'慎重に進む ― 傷薬を補給',fn:()=>{const liu=getUnit('liu');if(liu)liu.items.push('傷薬');stageChoiceDone[stageIndex]='careful';log('選択：慎重策。傷薬を1個補給した。');closeChoice();saveGame()}},
+   {label:'速攻を仕掛ける ― 全員の気力+3',fn:()=>{units.filter(u=>u.side==='player').forEach(u=>u.mp=Math.min(u.maxMp,u.mp+3));stageChoiceDone[stageIndex]='rush';log('選択：速攻策。全員の気力が3回復した。');closeChoice();saveGame()}}
+  ]);
+ }
+};
+
+function living(){return units.filter(u=>u.hp>0)}
+function unitAt(x,y){return living().find(u=>u.x===x&&u.y===y)}
+function getUnit(id){return units.find(u=>u.id===id)}
+function key(x,y){return `${x},${y}`}
+function inBounds(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS}
+function dist(a,b){return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)}
+
+function reachable(u){
+ const out=new Map([[key(u.x,u.y),0]]),q=[[u.x,u.y,0]];
+ while(q.length){
+  const [x,y,c]=q.shift();
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const nx=x+dx,ny=y+dy;if(!inBounds(nx,ny))continue;
+   let tc=terrainCost[terrain[ny][nx]];
+   if(stages[stageIndex].naval&&terrain[ny][nx]==='water')tc=2;
+   if(tc>=99)continue;
+   const occ=unitAt(nx,ny);if(occ&&occ.id!==u.id)continue;
+   let stepCost=terrainCost[terrain[ny][nx]];
+   if(stages[stageIndex].naval&&terrain[ny][nx]==='water')stepCost=2;
+   const nc=c+stepCost;if(nc>(u.move+(u.tempMove||0)))continue;
+   const k=key(nx,ny);if(!out.has(k)||nc<out.get(k)){out.set(k,nc);q.push([nx,ny,nc])}
+  }
+ }
+ return out;
+}
+
+function render(){
+ const board=document.getElementById('board');board.innerHTML='';
+ const moves=(selected&&selected.side==='player'&&!selected.acted&&phase==='player'&&mode==='move')?reachable(selected):new Map();
+ const atkTargets=(selected&&mode==='attack')?living().filter(u=>u.side==='enemy'&&dist(u,selected)<=attackRange(selected)):[];
+ const stratTargets=(selected&&['fire','rock'].includes(mode))?living().filter(u=>u.side==='enemy'&&dist(u,selected)<=2):[];
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const t=document.createElement('div');t.className='tile '+terrain[y][x];t.dataset.terrain=terrainJP[terrain[y][x]];
+  if(moves.has(key(x,y))&&!unitAt(x,y))t.classList.add('move');
+  if(atkTargets.some(u=>u.x===x&&u.y===y))t.classList.add('attack');
+  if(stratTargets.some(u=>u.x===x&&u.y===y))t.classList.add('strategy');
+  if(selected&&selected.x===x&&selected.y===y)t.classList.add('selected');
+  if(burningTiles[tileKey(x,y)]>0)t.classList.add('burning');
+  if(stages[stageIndex].capturePoints?.some(([cx,cy])=>cx===x&&cy===y))t.classList.add('captureMark');
+  if(stages[stageIndex].traps?.[tileKey(x,y)]&&!triggeredTraps.has(tileKey(x,y)))t.classList.add('trap');
+  const u=unitAt(x,y);
+  if(u){
+   const el=document.createElement('div');el.dataset.id=u.id;el.className='unit '+u.side+(u.acted?' acted':'')+(u.burnTurns>0?' burn':'')+(u.poisonTurns>0?' poison':'')+(u.isEscort?' escortMark':'')+((['defend','rescue'].includes(objectiveForStage().type)&&u.id==='guan')?' rescueTarget':'');el.textContent=u.char;el.title=u.name;
+   const hb=document.createElement('div');hb.className='hpbar';hb.innerHTML=`<div class="hpfill" style="width:${u.hp/u.maxHp*100}%"></div>`;el.appendChild(hb);
+   if(u.side==='player'){const mb=document.createElement('div');mb.className='mpbar';mb.innerHTML=`<div class="mpfill" style="width:${u.maxMp?u.mp/u.maxMp*100:0}%"></div>`;el.appendChild(mb)}
+   t.appendChild(el);
+  }
+  t.onclick=()=>tileClick(x,y);board.appendChild(t);
+ }
+ updateInfo();
+ document.getElementById('turnNo').textContent='TURN '+turn;
+ document.getElementById('money').textContent='軍資金 '+money;
+ const badge=document.getElementById('turnBadge');badge.textContent=phase==='player'?'自軍ターン':'敵軍ターン';badge.className='turnBadge'+(phase==='enemy'?' enemy':'');
+ document.getElementById('endTurnBtn').disabled=phase!=='player'||gameOver;
+}
+
+function tileClick(x,y){
+ if(gameOver||phase!=='player'||inCamp)return;
+ const clicked=unitAt(x,y);
+ if(mode==='attack'&&selected){
+  if(clicked&&clicked.side==='enemy'&&dist(selected,clicked)<=attackRange(selected)){
+   if(checkDuelTrigger(selected,clicked))return;
+   if(!tryCombo(selected,clicked))battle(selected,clicked);selected.acted=true;mode='move';postPlayerAction()
+  } return;
+ }
+ if(mode==='fire'&&selected){
+  if(clicked&&clicked.side==='enemy'&&dist(selected,clicked)<=2){castFire(selected,clicked);selected.acted=true;mode='move';postPlayerAction()}return;
+ }
+ if(mode==='rock'&&selected){
+  if(clicked&&clicked.side==='enemy'&&dist(selected,clicked)<=2){castRock(selected,clicked);selected.acted=true;mode='move';postPlayerAction()}return;
+ }
+ if(clicked&&clicked.side==='player'){selected=clicked;mode='move';render();return}
+ if(selected&&!selected.acted){
+  const moves=reachable(selected);
+  if(moves.has(key(x,y))&&!clicked){
+    selected.x=x;selected.y=y;log(`${selected.name}が${terrainJP[terrain[y][x]]}へ移動。`);triggerMapGimmick(selected);
+    const cps=stages[stageIndex].capturePoints||[];
+    if(cps.some(([cx,cy])=>cx===x&&cy===y)){
+      capturedPoints.add(tileKey(x,y));combatFx('拠点占領！');updateMorale(8);enemyMorale=Math.max(0,enemyMorale-10);
+      log(`🏯 ${selected.name}が拠点を占領した！`,'info');updateObjectiveUI();checkResult();
+    }
+    saveGame();render()
+  }
+ }
+}
+
+function updateInfo(){
+ const box=document.getElementById('unitInfo');
+ ['attackBtn','strategyBtn','itemBtn','specialBtn','waitBtn','talkBtn'].forEach(id=>document.getElementById(id).disabled=true);
+ if(!selected||selected.hp<=0){box.innerHTML='味方武将を選択してください。';return}
+ box.innerHTML=`
+ <div class="charProfile">
+ <div class="charBadge" data-id="${selected.id}">${selected.char}</div>
+ <div><div style="font-size:18px;font-family:serif;color:#ffe28b;font-weight:800">${selected.name}</div>
+ <div class="small">Lv.${selected.lv} ${selected.role} / ${selected.className||selected.troop}</div></div>
+ </div>
+ <div class="statline"><span>兵種</span><span class="value">${selected.troop||'歩兵'}　攻撃距離 ${attackRange(selected)}</span></div>
+ <div class="statline"><span>兵力</span><span class="value">${selected.hp} / ${selected.maxHp}</span></div>
+ <div class="statline"><span>気力</span><span class="value">${selected.mp} / ${selected.maxMp}</span></div>
+ <div class="statline"><span>攻撃</span><span class="value">${atk(selected)} <span class="small">(${selected.atkBase}+${selected.weapon?.atk||0})</span></span></div>
+ <div class="statline"><span>防御</span><span class="value">${def(selected)} <span class="small">(${selected.defBase}+${selected.armor?.def||0})</span></span></div>
+ <div class="statline"><span>移動</span><span class="value">${selected.move}</span></div>
+ <div class="statline"><span>経験値</span><span class="value">${selected.exp} / 100</span></div>
+ <div class="small">武器：${selected.weapon?.name||'なし'} ／ 防具：${selected.armor?.name||'なし'}<br>道具：${(selected.items||[]).length?selected.items.join('、'):'なし'}<br>必殺技：${specialName(selected)}</div>
+ <div class="statusRow">${statusText(selected).map(x=>`<span class="statusChip bad">${x}</span>`).join('')||'<span class="statusChip">正常</span>'}</div>`;
+ const can=selected.side==='player'&&!selected.acted&&phase==='player'&&!selected.isEscort;
+ if(selected.isEscort&&selected.side==='player'&&!selected.acted&&phase==='player'){
+  document.getElementById('waitBtn').disabled=false;return;
+ }
+ if(!can)return;
+ document.getElementById('attackBtn').disabled=!living().some(u=>u.side==='enemy'&&dist(u,selected)<=attackRange(selected));
+ document.getElementById('strategyBtn').disabled=false;
+ document.getElementById('itemBtn').disabled=!(selected.items||[]).length;
+ document.getElementById('waitBtn').disabled=false;
+ const talka
