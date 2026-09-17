@@ -1,8 +1,23 @@
 {
-  "liu":{"name":"劉備","title":"義の君主","color":"#4f7455","motif":"双剣・龍・緑の外套","special":"仁徳の号令"},
-  "guan":{"name":"関羽","title":"美髯公","color":"#305f46","motif":"青龍偃月刀・長髯・深緑","special":"青龍偃月斬"},
-  "zhang":{"name":"張飛","title":"豪勇の将","color":"#6f332e","motif":"蛇矛・黒赤鎧","special":"蛇矛猛撃"},
-  "zhao":{"name":"趙雲","title":"白馬の若武者","color":"#66788e","motif":"白銀鎧・長槍・青布","special":"龍胆突撃"},
-  "zhuge":{"name":"諸葛亮","title":"臥龍","color":"#515f7b","motif":"羽扇・白紺衣","special":"八卦の陣"},
-  "tian":{"name":"田豫","title":"弓将","color":"#536e7a","motif":"弓・青灰鎧","special":"連弩射撃"}
+  "version": 17,
+  "factions": {
+    "shu":{"name":"蜀","color":"#315f3b","accent":"#d6b85d"},
+    "wei":{"name":"魏","color":"#294f79","accent":"#a9c9ee"},
+    "wu":{"name":"呉","color":"#7d2d28","accent":"#e6a266"},
+    "other":{"name":"群雄","color":"#4b4141","accent":"#d7b46a"}
+  },
+  "officers": {
+    "liu":{"name":"劉備","reading":"りゅうび","faction":"shu","title":"仁徳の君","icon":"劉","role":"君主","troop":"歩兵","palette":["#315f3b","#d6b85d","#efe0b4"],"motif":"双剣・龍・深緑の外套","stats":{"leadership":92,"might":78,"intellect":85,"politics":95,"charm":100},"special":{"name":"仁徳の号令","mp":6,"effect":"周囲の味方を回復し、士気と防御を上昇"},"traits":["仁徳","激励","再起"],"quote":"民が幸せに暮らせる世を――それが、我らの志だ。"},
+    "guan":{"name":"関羽","reading":"かんう","faction":"shu","title":"美髯公","icon":"関","role":"豪傑","troop":"槍兵","palette":["#24543b","#8f302d","#d9b25f"],"motif":"青龍偃月刀・長髯・深緑の重鎧","stats":{"leadership":90,"might":98,"intellect":75,"politics":62,"charm":88},"special":{"name":"青龍偃月斬","mp":6,"effect":"正面の敵へ強烈な一撃。防御を一部無視"},"traits":["武神","威圧","一騎当千"],"quote":"義に生きる。それが我が道だ。"},
+    "zhang":{"name":"張飛","reading":"ちょうひ","faction":"shu","title":"燕人の猛将","icon":"張","role":"猛将","troop":"槍兵","palette":["#6d2f2a","#171515","#c7834f"],"motif":"蛇矛・黒赤の重鎧・荒々しい髪","stats":{"leadership":85,"might":97,"intellect":70,"politics":45,"charm":80},"special":{"name":"蛇矛猛撃","mp":6,"effect":"高威力攻撃。敵の士気を大きく下げる"},"traits":["咆哮","豪勇","怒涛"],"quote":"俺が道を開く！ついて来い！"},
+    "zhao":{"name":"趙雲","reading":"ちょううん","faction":"shu","title":"忠義の白龍","icon":"趙","role":"常勝将軍","troop":"騎兵","palette":["#70839a","#e2e5e8","#41628a"],"motif":"白銀鎧・長槍・青い戦布","stats":{"leadership":88,"might":96,"intellect":82,"politics":70,"charm":91},"special":{"name":"龍胆突撃","mp":6,"effect":"直線突撃し、経路上の敵へ連続攻撃"},"traits":["龍胆","護衛","神速"],"quote":"この趙子龍、退くわけには参りません。"},
+    "zhuge":{"name":"諸葛亮","reading":"しょかつりょう","faction":"shu","title":"臥龍","icon":"亮","role":"軍師","troop":"軍師","palette":["#4e5e7b","#ece8dd","#71678c"],"motif":"羽扇・白紺の衣・星と八卦","stats":{"leadership":95,"might":60,"intellect":100,"politics":98,"charm":92},"special":{"name":"八陣の計","mp":8,"effect":"広範囲の味方を強化し敵の移動を阻害"},"traits":["神算","看破","天候掌握"],"quote":"勝敗は、戦う前に決しております。"},
+    "tian":{"name":"田豫","reading":"でんよ","faction":"shu","title":"北境の弓将","icon":"田","role":"弓将","troop":"弓兵","palette":["#536e7a","#c2cfd4","#66553e"],"motif":"長弓・青灰の軽装鎧","stats":{"leadership":82,"might":84,"intellect":80,"politics":76,"charm":78},"special":{"name":"連弩射撃","mp":6,"effect":"射程内の敵へ連続射撃"},"traits":["遠射","冷静","狙撃"],"quote":"敵の動きを見れば、射るべき場所は分かる。"},
+    "cao":{"name":"曹操","reading":"そうそう","faction":"wei","title":"乱世の奸雄","icon":"曹","role":"君主","troop":"騎兵","palette":["#294f79","#111b2a","#c7a85d"],"motif":"蒼黒の甲冑・倚天の剣・鷹","stats":{"leadership":96,"might":85,"intellect":92,"politics":96,"charm":91},"special":{"name":"覇王の号令","mp":8,"effect":"魏軍全体の攻撃・移動を一時強化"},"traits":["覇道","用兵","求賢"],"quote":"天下の才は、天下のために使う。"},
+    "xiahou_dun":{"name":"夏侯惇","reading":"かこうとん","faction":"wei","title":"剛烈の将","icon":"惇","role":"猛将","troop":"騎兵","palette":["#304e70","#6c7580","#b99a54"],"motif":"隻眼・蒼鋼鎧・大刀","stats":{"leadership":88,"might":94,"intellect":78,"politics":70,"charm":82},"special":{"name":"剛烈断","mp":6,"effect":"反撃不能の強撃"},"traits":["不屈","猛進","鉄壁"],"quote":"傷など、進めぬ理由にはならん。"},
+    "sima":{"name":"司馬懿","reading":"しばい","faction":"wei","title":"深謀の狼","icon":"懿","role":"軍師","troop":"軍師","palette":["#293c5a","#29263a","#b6a275"],"motif":"濃紺の軍師装束・狼・月","stats":{"leadership":95,"might":70,"intellect":98,"politics":97,"charm":86},"special":{"name":"狼顧の計","mp":8,"effect":"敵の策略効果を反転し行動順を乱す"},"traits":["深謀","忍耐","反計"],"quote":"待てる者こそ、最後に勝つ。"},
+    "sun":{"name":"孫権","reading":"そんけん","faction":"wu","title":"江東の若き王","icon":"孫","role":"君主","troop":"歩兵","palette":["#7d2d28","#c18454","#d7b65e"],"motif":"赤銅鎧・虎・江東の旗","stats":{"leadership":92,"might":80,"intellect":88,"politics":94,"charm":90},"special":{"name":"虎臣の号令","mp":8,"effect":"味方の防御と会心率を強化"},"traits":["守成","虎臣","水軍指揮"],"quote":"江東は、我らの手で守り抜く。"},
+    "zhou":{"name":"周瑜","reading":"しゅうゆ","faction":"wu","title":"美周郎","icon":"瑜","role":"大都督","troop":"軍師","palette":["#8a302d","#e2d6c7","#d79b54"],"motif":"赤白の軍装・炎・羽扇","stats":{"leadership":92,"might":78,"intellect":95,"politics":88,"charm":95},"special":{"name":"赤壁炎陣","mp":9,"effect":"風向きを利用し広範囲を炎上"},"traits":["火計","水軍","美周郎"],"quote":"風は来る。あとは炎を放つだけだ。"},
+    "lu":{"name":"呂布","reading":"りょふ","faction":"other","title":"飛将","icon":"呂","role":"飛将","troop":"騎兵","palette":["#6e2524","#171414","#d3a646"],"motif":"方天画戟・赤黒鎧・赤兎馬","stats":{"leadership":88,"might":100,"intellect":50,"politics":35,"charm":82},"special":{"name":"飛将乱舞","mp":8,"effect":"周囲の複数敵へ超高威力連撃"},"traits":["天下無双","飛将","赤兎"],"quote":"強き者が勝つ。それだけだ。"}
+  }
 }
