@@ -1,0 +1,46 @@
+/* v9 morale / escort / combo */
+.moraleBar{height:7px;background:#26170e;border:1px solid #5d4028;border-radius:5px;overflow:hidden;margin-top:5px}
+.moraleFill{height:100%;background:linear-gradient(90deg,#7f5427,#f0c65f)}
+.escortMark{box-shadow:0 0 0 3px #8be0ff inset,0 0 14px #6ecbff}
+.comboFlash{animation:comboFlash .8s ease}
+@keyframes comboFlash{0%{filter:brightness(1)}25%{filter:brightness(2.4) saturate(1.5)}55%{filter:brightness(.8)}100%{filter:brightness(1)}}
+.objectiveImportant{color:#9fe9ff;font-weight:700}
+.bonusText{color:#ffe58b;font-size:12px;margin-top:5px}
+
+
+
+
+/* v10 naval / capture / rating */
+.tile.ship{background:linear-gradient(135deg,#8b6b42,#5c452e)}
+.tile.ship::before{content:"⛵";font-size:18px;opacity:.55;position:absolute}
+.tile.burning{box-shadow:inset 0 0 0 3px #ff6f3a,0 0 16px #ff5a2a}
+.captureMark{box-shadow:inset 0 0 0 3px #ffe06c,0 0 16px #ffd45a}
+.ratingBox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.ratingCard{border:1px solid #6f5a38;background:#18130e;padding:10px;border-radius:8px;text-align:center}
+.ratingCard b{display:block;color:#f4d37f;font-size:22px;font-family:serif}
+.scoreBig{font-family:serif;font-size:52px;font-weight:900;color:#ffe18a;text-align:center;text-shadow:0 3px #6e2b20}
+.enemyMorale{font-size:11px;color:#efb0a6}
+
+
+
+
+/* v11 mountain / ambush / traps */
+.tile.pass{background:linear-gradient(135deg,#76664d,#4f4535)}
+.tile.pass::before{content:"峡";font-family:serif;font-size:18px;opacity:.45;position:absolute}
+.tile.trap{box-shadow:inset 0 0 0 2px #cda14c}
+.trapMark{font-size:11px;color:#ffd079}
+.ambushFlash{animation:ambushFlash .8s ease}
+@keyframes ambushFlash{0%{filter:brightness(1)}35%{filter:brightness(.55) contrast(1.4)}60%{filter:brightness(1.8)}100%{filter:brightness(1)}}
+.meritBox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.meritBox button{min-height:76px}
+
+
+
+
+/* v12 branch / rescue */
+.storyFlag{font-size:11px;padding:4px 7px;border-radius:999px;border:1px solid #7d5b3a;background:#1a120d;color:#f2d99a}
+.rescueTarget{box-shadow:0 0 0 3px #ffd56a inset,0 0 18px #ffcd55}
+.branchGood{color:#a9e8a1;font-weight:700}
+.branchBad{color:#f1a6a6;font-weight:700}
+.branchPanel{border:1px solid #735a3b;background:#17110d;padding:10px;border-radius:8px;margin-top:10px}
+
