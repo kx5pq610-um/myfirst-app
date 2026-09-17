@@ -1,0 +1,176 @@
+=>{mode='move';closeChoice();render()};
+
+function calcDamage(a,d){
+ const variance=Math.floor(Math.random()*3)-1+(currentTime==='night'&&a.side==='enemy'?(Math.random()<.35?-2:0):0);
+ let terrainBonus=terrain[d.y][d.x]==='fort'?2:terrain[d.y][d.x]==='forest'?1:terrain[d.y][d.x]==='pass'?2:0;
+ const base=Math.max(1,atk(a)-(def(d)+terrainBonus)+3+variance);
+ return Math.max(1,Math.round(base*troopMultiplier(a,d)*(a.side==='player'?moraleMod():enemyMoraleMod())))
+}
+function battle(a,d){
+ const mul=troopMultiplier(a,d);
+ const critChance=a.id==='j6'?0.24:(a.id==='guan'||a.id==='zhang'||a.id==='zhao'?0.16:0.10);
+ const critical=Math.random()<critChance;
+ const label=critical?'会心！':mul>1?'有利！':mul<1?'不利':'攻撃！';
+ combatFx(label);
+ if(critical)showCutIn(a,'会心の一撃！');
+ let dmg=calcDamage(a,d);if(critical)dmg=Math.round(dmg*1.7);
+ d.hp=Math.max(0,d.hp-dmg);log(`${critical?'💥 ':''}${a.name}（${a.troop||'歩兵'}）の攻撃！ ${d.name}に${dmg}のダメージ。`,'hit');
+ a.tempAtk=0;
+ if(d.hp<=0){
+   log(`⚔ ${d.name}を撃破！`);
+   if(a.side==='player'){gainExp(a,45);updateMorale(5);enemyMorale=Math.max(0,enemyMorale-6);battleStats.kills++}
+   else updateMorale(-8);
+   if(!bossBonusClaimed&&d.role&&d.role.includes('敵将')){bossBonusClaimed=true;money+=300;updateMorale(10);log('🏆 敵将撃破ボーナス！ 軍資金+300、士気+10','info')}
+   checkResult();return
+ }
+ const range=dist(a,d);
+ if(range<=attackRange(d)){
+  const counter=calcDamage(d,a);a.hp=Math.max(0,a.hp-counter);if(a.side==='player')battleStats.damageTaken+=counter;log(`${d.name}の反撃！ ${a.name}に${counter}のダメージ。`);
+  if(a.hp<=0){log(`☠ ${a.name}が倒れた。`);checkResult()}else if(a.side==='player')gainExp(a,15);
+ }else{
+  log(`${d.name}は射程外のため反撃できない。`);
+ }
+}
+
+
+function triggerMapGimmick(u){
+ const st=stages[stageIndex],k=tileKey(u.x,u.y);
+ if(st.traps?.[k]&&!triggeredTraps.has(k)){
+  triggeredTraps.add(k);const tr=st.traps[k];
+  u.hp=Math.max(0,u.hp-tr.damage);battleStats.damageTaken+=tr.damage;
+  combatFx('罠！');log(`⚠ ${tr.text} ${u.name}に${tr.damage}ダメージ。`,'bad');
+ }
+ if(st.ambushes?.[k]&&!triggeredAmbushes.has(k)){
+  triggeredAmbushes.add(k);st.ambushes[k].forEach(a=>units.push(makeEnemy(a)));
+  document.querySelector('.boardWrap').classList.add('ambushFlash');setTimeout(()=>document.querySelector('.boardWrap').classList.remove('ambushFlash'),800);
+  combatFx('伏兵！');log('⚔ 山陰から伏兵が現れた！','boss');
+ }
+}
+function tileKey(x,y){return `${x},${y}`}
+
+
+function igniteTile(x,y,turns=3){
+ if(!inBounds(x,y))return;
+ if(['water','mountain'].includes(terrain[y][x]))return;
+ burningTiles[tileKey(x,y)]=Math.max(burningTiles[tileKey(x,y)]||0,turns);
+}
+function spreadFire(){
+ if(currentWeather!=='wind')return;
+ const additions=[];
+ Object.keys(burningTiles).forEach(k=>{
+  const [x,y]=k.split(',').map(Number);
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
+   const nx=x+dx,ny=y+dy;if(!inBounds(nx,ny))return;
+   if(['ship','forest'].includes(terrain[ny][nx])&&Math.random()<.45)additions.push([nx,ny]);
+  });
+ });
+ additions.forEach(([x,y])=>igniteTile(x,y,2));
+}
+function applyBurningTiles(){
+ Object.keys(burningTiles).forEach(k=>{
+  burningTiles[k]--;
+  const [x,y]=k.split(',').map(Number),u=unitAt(x,y);
+  if(u&&u.hp>0){
+   const dmg=Math.max(4,Math.round(u.maxHp*.1));u.hp=Math.max(0,u.hp-dmg);
+   log(`🔥 ${u.name}は燃える地形で${dmg}ダメージ。`,'bad');
+  }
+  if(burningTiles[k]<=0)delete burningTiles[k];
+ });
+ spreadFire();
+}
+function castFire(a,d){
+ a.mp-=4;combatFx('火計！');let bonus=terrain[d.y][d.x]==='forest'?5:0;
+ let weatherMod=currentWeather==='rain'?.65:currentWeather==='fog'?.9:currentWeather==='wind'?1.25:1;
+ const dmg=Math.max(3,Math.round((atk(a)+3+bonus-def(d)+Math.floor(Math.random()*4))*weatherMod));d.hp=Math.max(0,d.hp-dmg);
+ log(`🔥 ${a.name}の火計！ ${d.name}に${dmg}のダメージ。`);
+ igniteTile(d.x,d.y,currentWeather==='wind'?4:2);
+ if(d.hp<=0){log(`⚔ ${d.name}を撃破！`,'hit');gainExp(a,50);updateMorale(5);enemyMorale=Math.max(0,enemyMorale-8)}else{if(Math.random()<.45){d.burnTurns=2;log(`🔥 ${d.name}は炎上した！`,'bad')}gainExp(a,20)};
+}
+function castRock(a,d){
+ a.mp-=5;combatFx('落石！');
+ const terrainBonus=(terrain[d.y][d.x]==='fort'||terrain[d.y][d.x]==='mountain')?6:2;
+ const dmg=Math.max(6,Math.round(atk(a)*.8)+terrainBonus+Math.floor(Math.random()*5)-Math.floor(def(d)*.45));
+ d.hp=Math.max(0,d.hp-dmg);log(`🪨 ${a.name}の落石！ ${d.name}に${dmg}のダメージ。`);
+ if(d.hp<=0){log(`⚔ ${d.name}を撃破！`);gainExp(a,55)}else gainExp(a,22);
+}
+function gainExp(u,n){
+ u.exp+=n;
+ while(u.exp>=100){u.exp-=100;u.lv++;const g=u.growth||{hp:4,atk:1,def:1,mp:1};u.maxHp+=g.hp;u.hp=Math.min(u.maxHp,u.hp+g.hp);u.maxMp+=g.mp;u.mp=u.maxMp;u.atkBase+=g.atk;u.defBase+=g.def;combatFx('LEVEL UP!');log(`✨ ${u.name}がLv.${u.lv}に上がった！ HP+${g.hp} 攻撃+${g.atk} 防御+${g.def}`);if(u.lv===10&&!u.promoted)offerPromotion(u)}
+}
+
+function checkDuelTrigger(a,d){
+ if(stageIndex===5&&d.id==='j6'&&['liu','guan','zhang'].includes(a.id)){
+  const alive=['liu','guan','zhang'].every(id=>{const u=getUnit(id);return u&&u.hp>0});
+  if(alive&&!trioTriggered){pendingDuel={a,d};trioTriggered=true;document.getElementById('trioDuel').classList.add('show');sfx('boss');return true}
+ }
+ if(stageIndex!==2)return false;
+ if(d.id!=='g4')return false;
+ if(!['guan','zhang','zhao'].includes(a.id))return false;
+ pendingDuel={a,d};document.getElementById('duelA').textContent=a.name;document.getElementById('duelB').textContent=d.name;
+ document.getElementById('duelText').textContent=`${a.name}が敵将へ名乗りを上げた！`;document.getElementById('duel').classList.add('show');return true;
+}
+
+document.getElementById('trioBtn').onclick=()=>{
+ const lu=getUnit('j6');if(!lu)return;
+ const liu=getUnit('liu'),guan=getUnit('guan'),zhang=getUnit('zhang');
+ const p=atk(liu)+atk(guan)+atk(zhang)+liu.lv+guan.lv+zhang.lv;
+ const dmg=Math.max(35,Math.round(p*.75)-Math.floor(def(lu)*1.4));
+ lu.hp=Math.max(1,lu.hp-dmg);
+ [liu,guan,zhang].forEach(u=>{u.exp+=25});
+ document.getElementById('trioDuel').classList.remove('show');
+ combatFx('三英戦呂布！');log(`🔥 三英戦呂布！ 呂布に${dmg}の大ダメージ！`);
+ log('呂布「面白い……！ だが、まだ終わらぬ！」');
+ if(pendingDuel?.a)pendingDuel.a.acted=true;pendingDuel=null;mode='move';postPlayerAction();
+};
+document.getElementById('duelBtn').onclick=()=>{
+ if(!pendingDuel)return;
+ const {a,d}=pendingDuel;
+ const power=atk(a)+a.lv+Math.floor(Math.random()*6);
+ const enemyPower=atk(d)+d.lv+Math.floor(Math.random()*5);
+ if(power>=enemyPower){
+  d.hp=0;log(`⚔ 一騎打ち！ ${a.name}が${d.name}を討ち取った！`);gainExp(a,70);
+ }else{
+  const dmg=Math.max(4,Math.floor(a.maxHp*.35));a.hp=Math.max(1,a.hp-dmg);d.hp=Math.max(1,d.hp-10);
+  log(`⚡ 一騎打ちは決着せず。${a.name}は${dmg}の損害を受けた。`);
+ }
+ a.acted=true;pendingDuel=null;document.getElementById('duel').classList.remove('show');mode='move';postPlayerAction();
+};
+
+
+function promotionOptions(u){
+ if(u.troop==='歩兵')return [{name:'重歩兵',troop:'重歩兵',hp:8,atk:2,def:4,move:0},{name:'軍師',troop:'軍師',hp:3,atk:1,def:2,move:0,mp:6}];
+ if(u.troop==='騎兵')return [{name:'重騎兵',troop:'重騎兵',hp:6,atk:4,def:2,move:0},{name:'軽騎兵',troop:'軽騎兵',hp:3,atk:3,def:1,move:1}];
+ if(u.troop==='槍兵')return [{name:'長槍兵',troop:'長槍兵',hp:7,atk:3,def:3,move:0},{name:'近衛兵',troop:'近衛兵',hp:8,atk:2,def:4,move:0}];
+ if(u.troop==='弓兵')return [{name:'弩兵',troop:'弩兵',hp:4,atk:4,def:1,move:0},{name:'連弩兵',troop:'連弩兵',hp:3,atk:3,def:1,move:0,range:1}];
+ return [{name:'精鋭兵',troop:'精鋭兵',hp:5,atk:2,def:2,move:0}];
+}
+function offerPromotion(u){
+ const body=document.getElementById('promotionBody');body.innerHTML=`<p><b>${u.name}</b> が上級兵種へ昇格できます。</p>`;
+ promotionOptions(u).forEach(o=>{
+  const d=document.createElement('div');d.className='promotion';
+  d.innerHTML=`<h3>${o.name}</h3><div class="small">HP+${o.hp||0} 攻撃+${o.atk||0} 防御+${o.def||0} 移動+${o.move||0}${o.mp?` 気力+${o.mp}`:''}</div>`;
+  const b=document.createElement('button');b.textContent='この兵種へ昇格';b.onclick=()=>applyPromotion(u,o);d.appendChild(b);body.appendChild(d);
+ });
+ document.getElementById('promotionModal').classList.add('show');
+}
+function applyPromotion(u,o){
+ u.promoted=true;u.className=o.name;u.troop=o.troop;u.maxHp+=o.hp||0;u.hp=u.maxHp;u.atkBase+=o.atk||0;u.defBase+=o.def||0;u.move+=o.move||0;u.maxMp+=o.mp||0;u.mp=u.maxMp;
+ if(o.range)u.bonusRange=o.range;
+ document.getElementById('promotionModal').classList.remove('show');combatFx('昇格！');log(`⭐ ${u.name}は${o.name}へ昇格した！`,'info');render();saveGame();
+}
+document.getElementById('promotionClose').onclick=()=>document.getElementById('promotionModal').classList.remove('show');
+function postPlayerAction(){
+ checkResult();if(gameOver)return;if(selected)selected.tempMove=0;selected=null;mode='move';saveGame();render();
+ if(living().filter(u=>u.side==='player').every(u=>u.acted))endPlayerTurn();
+}
+function endPlayerTurn(){
+ if(gameOver)return;selected=null;mode='move';phase='enemy';render();setTimeout(enemyTurn,400);
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function luBuSpecial(e){
+ const players=living().filter(u=>u.side==='player'&&dist(u,e)<=2);
+ if(!players.length)return false;
+ if(Math.random()>.38)return false;
+ const t=players.sort((a,b)=>a.hp-b.hp)[0];
+ showCutIn(e,'飛将乱舞！');combatFx('飛将乱舞！'
