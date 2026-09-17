@@ -1,0 +1,144 @@
+ble=living().some(u=>u.side==='player'&&u.id!==selected.id&&dist(u,selected)===1);
+ document.getElementById('talkBtn').disabled=!talkable;
+ const ev=stages[stageIndex].events[key(selected.x,selected.y)];
+ const sb=document.getElementById('specialBtn');
+ if(ev&&!visitedEvents.has(key(selected.x,selected.y))){
+  sb.disabled=false;sb.textContent=ev.kind==='chest'?'宝箱を開ける':'訪ねる';
+ }else{
+  sb.disabled=selected.mp<6;sb.textContent='必殺技';
+ }
+}
+
+document.getElementById('attackBtn').onclick=()=>{if(selected&&!selected.acted){mode='attack';render()}};
+document.getElementById('waitBtn').onclick=()=>{if(!selected||selected.acted)return;selected.acted=true;log(`${selected.name}は待機した。`);postPlayerAction()};
+document.getElementById('endTurnBtn').onclick=()=>endPlayerTurn();
+document.getElementById('restartBtn').onclick=()=>{localStorage.removeItem('eiketsu_mvp_v5_autosave');money=300;completedStages=0;startStage(0)};
+document.getElementById('saveBtn').onclick=()=>openSaveSlots(true);
+document.getElementById('talkBtn').onclick=()=>{
+ if(!selected)return;
+ const others=living().filter(u=>u.side==='player'&&u.id!==selected.id&&dist(u,selected)===1);
+ if(!others.length)return;
+ openChoice('会話',`${selected.name}が話しかけます。`,others.map(o=>({
+  label:o.name,
+  fn:()=>{
+   const bonus=conversation(selected,o);
+   closeChoice();selected.acted=true;postPlayerAction();
+  }
+ })));
+};
+function conversation(a,b){
+ let text=`${a.name}「共に進もう。」 ${b.name}「承知！」`;let bonus='';
+ if((a.id==='liu'&&b.id==='zhuge')||(a.id==='zhuge'&&b.id==='liu')){a.mp=Math.min(a.maxMp,a.mp+3);b.mp=Math.min(b.maxMp,b.mp+3);bonus=' 気力+3'}
+ else if(['guan','zhang'].includes(a.id)&&['guan','zhang'].includes(b.id)){a.tempAtk=(a.tempAtk||0)+2;b.tempAtk=(b.tempAtk||0)+2;bonus=' 攻撃強化'}
+ else {a.hp=Math.min(a.maxHp,a.hp+4);b.hp=Math.min(b.maxHp,b.hp+4);bonus=' 兵力+4'}
+ log(`💬 ${text}${bonus}`,'info');return true;
+}
+document.getElementById('specialBtn').onclick=()=>{
+ const ev=selected?stages[stageIndex].events[key(selected.x,selected.y)]:null;
+ if(ev&&!visitedEvents.has(key(selected.x,selected.y)))triggerEvent();
+ else useSpecial();
+};
+
+document.getElementById('strategyBtn').onclick=()=>{
+ if(!selected||selected.acted)return;
+ openChoice('策略',`<b>${selected.name}</b> の策略を選択`,[
+  {label:`火計 <span class="tag">消費4 / 射程2</span>`,disabled:selected.mp<4,fn:()=>{mode='fire';closeChoice();render();log('紫色の範囲から火計の対象を選択。')}},
+  {label:`落石 <span class="tag">消費5 / 射程2</span>`,disabled:selected.mp<5,fn:()=>{mode='rock';closeChoice();render();log('紫色の範囲から落石の対象を選択。')}},
+  {label:`回復 <span class="tag">消費3</span>`,disabled:selected.mp<3||selected.hp>=selected.maxHp,fn:()=>{selected.mp-=3;const n=Math.min(10+selected.lv*2,selected.maxHp-selected.hp);selected.hp+=n;selected.acted=true;combatFx('回復！');log(`✨ ${selected.name}は回復の策を用い、兵力が${n}回復。`);closeChoice();postPlayerAction()}},
+  {label:`大回復 <span class="tag">消費7</span>`,disabled:selected.mp<7||selected.hp>=selected.maxHp,fn:()=>{selected.mp-=7;const n=Math.min(22+selected.lv*2,selected.maxHp-selected.hp);selected.hp+=n;selected.acted=true;combatFx('大回復！');log(`✨ ${selected.name}は大回復を用い、兵力が${n}回復。`);closeChoice();postPlayerAction()}},
+  {label:`鼓舞 <span class="tag">消費2</span>`,disabled:selected.mp<2,fn:()=>{selected.mp-=2;selected.hp=Math.min(selected.maxHp,selected.hp+4);selected.tempAtk=(selected.tempAtk||0)+2;log(`📣 ${selected.name}は軍を鼓舞し、次の攻撃が強化された。`,'info');selected.acted=true;closeChoice();postPlayerAction()}},
+  {label:`堅守 <span class="tag">消費3</span>`,disabled:selected.mp<3,fn:()=>{selected.mp-=3;selected.guardTurns=2;log(`🛡 ${selected.name}は守りを固めた。2ターン防御+3。`,'info');selected.acted=true;closeChoice();postPlayerAction()}},
+  {label:`八卦の陣 <span class="tag">軍師専用 / 消費8</span>`,disabled:selected.id!=='zhuge'||selected.mp<8,fn:()=>{selected.mp-=8;living().filter(u=>u.side==='player'&&dist(u,selected)<=2).forEach(u=>u.guardTurns=3);showCutIn(selected,'八卦の陣！');combatFx('八卦の陣！');log('☯ 諸葛亮の八卦の陣！ 周囲の味方が堅守状態になった。','info');selected.acted=true;closeChoice();postPlayerAction()}},
+  {label:`神速の策 <span class="tag">軍師専用 / 消費7</span>`,disabled:selected.id!=='zhuge'||selected.mp<7,fn:()=>{selected.mp-=7;living().filter(u=>u.side==='player'&&u.id!==selected.id).forEach(u=>u.tempMove=1);showCutIn(selected,'神速の策！');log('⚡ 味方全軍の移動力が一時的に上昇した。','info');selected.acted=true;closeChoice();postPlayerAction()}}
+ ])
+};
+document.getElementById('itemBtn').onclick=()=>{
+ if(!selected||selected.acted)return;
+ const opts=(selected.items||[]).map((it,idx)=>({label:it,fn:()=>useItem(selected,it,idx)}));
+ openChoice('道具','使用する道具を選択',opts);
+};
+function useItem(u,it,idx){
+ if(it==='傷薬'){const n=Math.min(12,u.maxHp-u.hp);u.hp+=n;log(`🧪 ${u.name}は傷薬を使い、兵力が${n}回復。`)}
+ else if(it==='気力薬'){const n=Math.min(6,u.maxMp-u.mp);u.mp+=n;log(`🔷 ${u.name}は気力薬を使い、気力が${n}回復。`)}
+ else {log(`${it}は戦闘中には使えない。`);closeChoice();return}
+ u.items.splice(idx,1);u.acted=true;closeChoice();postPlayerAction();
+}
+
+
+function comboPartner(u,target){
+ return living().find(x=>x.side==='player'&&!x.isEscort&&x.id!==u.id&&dist(x,u)===1&&dist(x,target)<=attackRange(x)&&!x.acted);
+}
+function tryCombo(u,target){
+ const p=comboPartner(u,target);if(!p||Math.random()>.45)return false;
+ const dmg1=calcDamage(u,target),dmg2=Math.max(1,Math.round(calcDamage(p,target)*.8));
+ target.hp=Math.max(0,target.hp-dmg1-dmg2);p.acted=true;
+ document.querySelector('.boardWrap').classList.add('comboFlash');setTimeout(()=>document.querySelector('.boardWrap').classList.remove('comboFlash'),800);
+ showCutIn(u,`${p.name}と連携！`);combatFx('連携攻撃！');
+ log(`🤝 ${u.name}と${p.name}の連携攻撃！ ${target.name}に合計${dmg1+dmg2}ダメージ！`,'info');
+ updateMorale(3);return true;
+}
+function specialName(u){
+ if(u.id==='liu')return '仁徳の号令';
+ if(u.id==='guan')return '青龍偃月斬';
+ if(u.id==='zhang')return '蛇矛猛撃';
+ if(u.id==='zhao')return '龍胆突撃';
+ if(u.id==='tian')return '連弩射撃';
+ return '奮戦';
+}
+function useSpecial(){
+ if(!selected||selected.acted||selected.mp<6)return;
+ const u=selected;u.mp-=6;
+ document.querySelector('.boardWrap').classList.add('specialFx');
+ setTimeout(()=>document.querySelector('.boardWrap').classList.remove('specialFx'),800);
+ showCutIn(u,specialName(u)+'！');
+ if(u.id==='liu'){
+  living().filter(x=>x.side==='player'&&dist(x,u)<=2).forEach(x=>x.hp=Math.min(x.maxHp,x.hp+10));
+  combatFx('仁徳の号令！');log('🌟 劉備の仁徳の号令！ 周囲の味方を回復した。');
+ }else if(u.id==='tian'){
+  const ts=living().filter(x=>x.side==='enemy'&&dist(x,u)<=2).slice(0,3);
+  ts.forEach(t=>{const dmg=Math.max(5,Math.round(atk(u)*.85)-Math.floor(def(t)*.35));t.hp=Math.max(0,t.hp-dmg);log(`🏹 ${t.name}に${dmg}ダメージ。`)});
+  combatFx('連弩射撃！');
+ }else{
+  const ts=living().filter(x=>x.side==='enemy'&&dist(x,u)<=attackRange(u));
+  if(!ts.length){u.mp+=6;log('必殺技の対象がいない。');render();return}
+  const t=ts.sort((a,b)=>a.hp-b.hp)[0];
+  const mult=u.id==='guan'?2.0:u.id==='zhang'?1.9:u.id==='zhao'?1.8:1.6;
+  const dmg=Math.max(8,Math.round((atk(u)+4-def(t)*.4)*mult));t.hp=Math.max(0,t.hp-dmg);
+  combatFx(specialName(u)+'！');log(`💥 ${u.name}の${specialName(u)}！ ${t.name}に${dmg}ダメージ！`);
+  if(t.hp<=0){gainExp(u,65);log(`⚔ ${t.name}を撃破！`)}
+ }
+ u.acted=true;checkResult();postPlayerAction();
+}
+function triggerEvent(){
+ if(!selected)return;
+ const k=key(selected.x,selected.y),ev=stages[stageIndex].events[k];if(!ev||visitedEvents.has(k))return;
+ visitedEvents.add(k);log((ev.kind==='chest'?'🧰 ':'🏠 ')+ev.text.replace(/「|」/g,''));
+ if(ev.item){
+  if(['鉄の剣','鋼の剣','革の鎧','鉄の鎧'].includes(ev.item)){equipFound(selected,ev.item)}
+  else {selected.items.push(ev.item);log(`🎁 ${ev.item}を入手した。`)}
+ }
+ if(ev.mp){selected.mp=Math.min(selected.maxMp,selected.mp+ev.mp);log(`🔷 ${selected.name}の気力が${ev.mp}回復した。`)}
+ if(ev.recruit==='zhao'&&!getUnit('zhao')){
+  const z=zhaoUnit();z.x=Math.max(0,selected.x-1);z.y=selected.y;units.push(z);log('⭐ 趙雲が仲間になった！');
+ }
+ if(ev.recruit==='zhuge'&&!getUnit('zhuge')){
+  const z=zhugeUnit();z.x=Math.max(0,selected.x-1);z.y=selected.y;units.push(z);log('🪶 諸葛亮が仲間になった！ 軍師専用策略が使用可能になった。','info');
+ }
+ if(ev.recruit==='tian'&&!getUnit('tian')){
+  const t=tianUnit();t.x=Math.max(0,selected.x-1);t.y=selected.y;units.push(t);log('🏹 田豫が仲間になった！ 弓兵は2マス先を攻撃できます。');
+ }
+ selected.acted=true;postPlayerAction();
+}
+function equipFound(u,name){
+ const item=shopItems.find(i=>i.name===name);if(!item)return;
+ if(item.type==='weapon'){u.weapon={name:item.name,atk:item.atk};log(`⚔ ${u.name}は${name}を装備した。`)}
+ if(item.type==='armor'){u.armor={name:item.name,def:item.def};log(`🛡 ${u.name}は${name}を装備した。`)}
+}
+function openChoice(title,text,options){
+ document.getElementById('choiceTitle').textContent=title;document.getElementById('choiceText').innerHTML=text;
+ const list=document.getElementById('choiceList');list.innerHTML='';
+ options.forEach(o=>{const b=document.createElement('button');b.innerHTML=o.label;b.disabled=!!o.disabled;b.onclick=o.fn;list.appendChild(b)});
+ document.getElementById('choice').classList.add('show');
+}
+function closeChoice(){document.getElementById('choice').classList.remove('show')}
+document.getElementById('choiceCancel').onclick=()=>{mode='move';closeChoice();render()};
