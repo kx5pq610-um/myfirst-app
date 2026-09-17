@@ -1,0 +1,8 @@
+{
+  "liu":{"name":"劉備","title":"義の君主","color":"#4f7455","motif":"双剣・龍・緑の外套","special":"仁徳の号令"},
+  "guan":{"name":"関羽","title":"美髯公","color":"#305f46","motif":"青龍偃月刀・長髯・深緑","special":"青龍偃月斬"},
+  "zhang":{"name":"張飛","title":"豪勇の将","color":"#6f332e","motif":"蛇矛・黒赤鎧","special":"蛇矛猛撃"},
+  "zhao":{"name":"趙雲","title":"白馬の若武者","color":"#66788e","motif":"白銀鎧・長槍・青布","special":"龍胆突撃"},
+  "zhuge":{"name":"諸葛亮","title":"臥龍","color":"#515f7b","motif":"羽扇・白紺衣","special":"八卦の陣"},
+  "tian":{"name":"田豫","title":"弓将","color":"#536e7a","motif":"弓・青灰鎧","special":"連弩射撃"}
+}
