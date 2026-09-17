@@ -7,10 +7,7 @@
     'js/chunks/part05.txt',
     'js/chunks/part06.txt',
     'js/chunks/part07.txt',
-    'js/chunks/part08.txt',
-    'js/chunks/part09.txt',
-    'js/chunks/part10.txt',
-    'js/chunks/part11.txt'
+    'js/chunks/part08.txt'
   ];
   const code=(await Promise.all(parts.map(p=>fetch(p).then(r=>{if(!r.ok)throw new Error('load '+p);return r.text()})))).join('');
   (0,eval)(code);
