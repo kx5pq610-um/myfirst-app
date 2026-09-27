@@ -23,6 +23,7 @@
 
 ## 主な入口
 
+- `anatomy-atlas.html` — 日本語版3D人体アトラス
 - `game.html` — プレイ用トップ画面
 - `play-v24.html` — 三章連続プレイ版
 - `campaign.html` — キャンペーン画面
