@@ -38,13 +38,25 @@ export const ORGAN_VISIBLE_SYSTEMS:SystemId[] = ['cardiac','arterial','venous','
 export const DEFAULT_VISIBLE:SystemId[] = LEARNING_VISIBLE_SYSTEMS;
 export const EXPLANATIONS:Record<string,string> = {
  'heart':'胸の中央にある筋肉のポンプです。右側は肺へ、左側は全身へ血液を送り出します。4つの部屋と弁が、血液の流れを一方向に保ちます。',
+ 'cavity of right atrium':'右心房の内側の空間です。全身から戻った酸素の少ない血液を受け取り、右心室へ送ります。',
+ 'cavity of left atrium':'左心房の内側の空間です。肺から戻った酸素の多い血液を受け取り、左心室へ送ります。',
+ 'cavity of right ventricle':'右心室の内側の空間です。肺動脈を通して、酸素の少ない血液を肺へ送り出します。',
+ 'cavity of left ventricle':'左心室の内側の空間です。大動脈を通して、酸素の多い血液を全身へ送り出します。',
  'liver':'横隔膜の右下にある大きな器官です。吸収された栄養分を処理し、胆汁をつくり、血液中のたんぱく質もつくります。',
+ 'kidney':'血液から不要な物質や余分な水分を取り除き、尿をつくる器官です。水分量や塩分濃度の調節にも関わります。',
  'brain':'神経系の中心となる器官です。見たり聞いたりした情報を受け取り、運動・記憶・言葉・体の調節に関わります。',
+ 'spinal cord':'脳と末しょう神経をつなぐ中枢神経です。反射では、脳へ情報が届く前に筋肉へ命令を出す経路になります。',
  'stomach':'食道と小腸の間にある筋肉の袋です。食べ物を一時的にたくわえ、胃液と混ぜて消化します。',
  'spleen':'腹部の左上にあるリンパ系の器官です。血液を調べ、古くなった血球を処理し、免疫にも関わります。',
  'pancreas':'消化とホルモンの両方に関わる器官です。小腸へ消化液を出し、インスリンなどのホルモンも分泌します。',
  'urinary bladder':'腎臓でつくられた尿を一時的にたくわえる、骨盤内の筋肉の袋です。',
  'trachea':'のどから左右の気管支へ続く空気の通り道です。軟骨の輪が気管をつぶれにくくしています。',
+ 'right eye':'光を受け取る感覚器官です。角膜、虹彩、瞳孔、水晶体、網膜、視神経などからなります。',
+ 'left eye':'光を受け取る感覚器官です。角膜、虹彩、瞳孔、水晶体、網膜、視神経などからなります。',
+ 'right lens':'光を曲げて網膜に像を結ばせる透明な部分です。厚さを変えて焦点を合わせます。',
+ 'left lens':'光を曲げて網膜に像を結ばせる透明な部分です。厚さを変えて焦点を合わせます。',
+ 'right optic nerve':'右目の網膜の情報を脳へ伝える神経です。',
+ 'left optic nerve':'左目の網膜の情報を脳へ伝える神経です。',
  'diaphragm':'胸と腹を分ける広い筋肉です。縮むと胸の容積が大きくなり、空気を肺へ吸い込みます。',
 };
 
@@ -52,9 +64,9 @@ const EXACT_JA:Record<string,string> = {
  'heart':'心臓','brain':'脳','spinal cord':'せきずい','liver':'肝臓','stomach':'胃','spleen':'ひ臓','pancreas':'すい臓',
  'right lung':'右肺','left lung':'左肺','lung':'肺','trachea':'気管','diaphragm':'横隔膜','esophagus':'食道','small intestine':'小腸','large intestine':'大腸',
  'kidney':'腎臓','right kidney':'右腎臓','left kidney':'左腎臓','ureter':'尿管','right ureter':'右尿管','left ureter':'左尿管','urinary bladder':'ぼうこう','urethra':'尿道',
- 'right eye':'右目','left eye':'左目','right eyeball':'右眼球','left eyeball':'左眼球','iris':'虹彩','right iris':'右虹彩','left iris':'左虹彩','lens':'水晶体','right lens':'右水晶体','left lens':'左水晶体',
+ 'right eye':'右目','left eye':'左目','right eyeball':'右眼球','left eyeball':'左眼球','iris':'虹彩','right iris':'右虹彩','left iris':'左虹彩','pupil':'瞳孔','right pupil':'右瞳孔','left pupil':'左瞳孔','cornea':'角膜','right cornea':'右角膜','left cornea':'左角膜','lens':'水晶体','right lens':'右水晶体','left lens':'左水晶体',
  'optic nerve':'視神経','right optic nerve':'右視神経','left optic nerve':'左視神経','retina':'網膜','optic part of retina':'網膜','external ear':'外耳','middle ear':'中耳','inner ear':'内耳','cochlea':'うずまき管（蝸牛）',
- 'skin':'皮膚','bone organ':'骨','muscle organ':'筋肉','cranial nerve':'脳神経','nerve trunk':'神経幹','right side of heart':'心臓の右側','left side of heart':'心臓の左側',
+ 'skin':'皮膚','bone organ':'骨','muscle organ':'筋肉','cranial nerve':'脳神経','nerve trunk':'神経幹','right side of heart':'心臓の右側','left side of heart':'心臓の左側','cavity of right atrium':'右心房','cavity of left atrium':'左心房','cavity of right ventricle':'右心室','cavity of left ventricle':'左心室','wall of right atrium':'右心房の壁','wall of left atrium':'左心房の壁','wall of right ventricle':'右心室の壁','wall of left ventricle':'左心室の壁',
 };
 
 const PHRASES:[RegExp,string][] = [
