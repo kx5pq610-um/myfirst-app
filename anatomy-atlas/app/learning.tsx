@@ -1,7 +1,8 @@
-import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {BookOpen,ChevronRight,HeartPulse,Info,MousePointer2,X} from 'lucide-react';
+import {useState,type ReactNode} from 'react';
+import {BookOpen,ChevronRight,Info,MousePointer2,X} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import type {SystemId} from './anatomy';
+import {HeartLab,EyeLab} from './organ-labs';
 
 export type LessonId='heart'|'blood'|'respiratory'|'urinary'|'liver'|'eye'|'nervous';
 
@@ -33,26 +34,6 @@ function Route({items,accent='teal'}:{items:string[];accent?:string}){
  </div>;
 }
 
-function HeartLesson(){
- const [mode,setMode]=useState<'whole'|'pulmonary'|'systemic'>('whole');
- const [bpm,setBpm]=useState(72),[playing,setPlaying]=useState(false);
- const timer=useRef<number|undefined>(undefined),audio=useRef<AudioContext|null>(null);
- const stop=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=undefined;setPlaying(false);};
- const playBeat=()=>{const AudioContextClass=window.AudioContext??(window as typeof window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!AudioContextClass)return;const context=audio.current??new AudioContextClass();audio.current=context;void context.resume();const sound=(when:number,frequency:number,length:number,volume:number)=>{const oscillator=context.createOscillator(),gain=context.createGain();oscillator.type='sine';oscillator.frequency.setValueAtTime(frequency,when);gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.012);gain.gain.exponentialRampToValueAtTime(.0001,when+length);oscillator.connect(gain).connect(context.destination);oscillator.start(when);oscillator.stop(when+length+.02);};const beat=()=>{if(!audio.current)return;const now=context.currentTime;sound(now,92,.11,.18);sound(now+.15,64,.14,.14);timer.current=window.setTimeout(beat,60000/bpm);};stop();setPlaying(true);beat();timer.current=window.setTimeout(stop,9000);};
- useEffect(()=>()=>{if(timer.current)window.clearTimeout(timer.current);void audio.current?.close();},[]);
- const routes={whole:['全身','大静脈','右心房','右心室','肺動脈','肺','肺静脈','左心房','左心室','大動脈','全身'],pulmonary:['右心室','肺動脈','肺','肺静脈','左心房'],systemic:['左心室','大動脈','全身','大静脈','右心房']};
- return <div className="lesson-visual heart-lesson">
-  <div className="lesson-visual-head"><span className="visual-label"><HeartPulse size={16}/> 心臓の4つの部屋</span><span className="visual-note">図は流れを学ぶための模式図</span></div>
-  <div className="chamber-grid" role="img" aria-label="右心房、右心室、左心房、左心室の模式図">
-   <div className="chamber venous"><b>右心房</b><small>全身から受け取る</small></div><div className="chamber venous"><b>右心室</b><small>肺へ送り出す</small></div>
-   <div className="chamber oxygen"><b>左心房</b><small>肺から受け取る</small></div><div className="chamber oxygen"><b>左心室</b><small>全身へ送り出す</small></div>
-  </div>
-  <div className="lesson-tabs mini-tabs" role="tablist" aria-label="循環の種類"><button className={mode==='whole'?'selected':''} onClick={()=>setMode('whole')}>全体</button><button className={mode==='pulmonary'?'selected':''} onClick={()=>setMode('pulmonary')}>肺循環</button><button className={mode==='systemic'?'selected':''} onClick={()=>setMode('systemic')}>体循環</button></div>
-  <Route items={routes[mode]} accent={mode==='pulmonary'?'blue':mode==='systemic'?'red':'teal'}/>
-  <div className="heartbeat-control"><div><b><HeartPulse size={14}/> 拍動を聞く</b><span>学習用の模式音（実際の心音ではありません）</span></div><div className="heartbeat-actions"><button className={playing?'playing':''} onClick={playing?stop:playBeat}>{playing?'停止':'再生'}</button><label>心拍数<select value={bpm} onChange={event=>{setBpm(Number(event.target.value));if(playing)stop();}}><option value="60">ゆっくり 60</option><option value="72">標準 72</option><option value="100">速い 100</option><option value="120">運動時 120</option></select><small>bpm</small></label></div></div>
-  <p className="diagram-caption">{mode==='pulmonary'?'右心室から肺へ行き、酸素を受け取って左心房へ戻る流れです。':mode==='systemic'?'左心室から全身へ酸素を届け、右心房へ戻る流れです。':'全身と肺を通る血液の流れを、4つの部屋と血管で追ってみましょう。'}</p>
- </div>;
-}
 
 function BloodLesson(){
  const items=[['rbc','赤血球','ヘモグロビンで酸素を運ぶ','酸素・二酸化炭素'],['wbc','白血球','異物から体を守る','免疫'],['platelet','血小板','傷口をふさぎ出血を止める','血液凝固'],['plasma','血しょう','養分・ホルモン・不要物を運ぶ','体内環境']];
@@ -70,22 +51,23 @@ function UrinaryLesson(){return <div className="lesson-visual"><div className="l
 
 function LiverLesson(){return <div className="lesson-visual"><div className="lesson-visual-head"><span className="visual-label">肝臓へ運ばれる養分</span><span className="visual-note">消化・吸収とのつながり</span></div><Route items={['小腸で吸収','肝臓','全身で利用・貯蔵']} accent="brown"/><div className="liver-facts"><div><b>胆汁をつくる</b><span>脂肪の消化を助ける</span></div><div><b>養分を処理する</b><span>体で使いやすい形に調整する</span></div><div><b>血液中の物質を処理する</b><span>体内環境の維持に関わる</span></div></div></div>}
 
-function EyeLesson(){return <div className="lesson-visual"><div className="lesson-visual-head"><span className="visual-label">見るまでの道すじ</span><span className="visual-note">目から脳へ</span></div><Route items={['光','角膜','瞳孔','水晶体','網膜','視神経','大脳']} accent="blue"/><div className="eye-parts"><span><b>虹彩</b><small>瞳孔の大きさを変え、光の量を調節</small></span><span><b>水晶体</b><small>光を曲げ、網膜に焦点を合わせる</small></span><span><b>網膜</b><small>光を受け取り、信号に変える</small></span></div><p className="diagram-caption">「目で見ている」だけでなく、網膜の情報が視神経を通り、脳で処理されて見えます。</p></div>}
 
 function NervousLesson(){return <div className="lesson-visual"><div className="lesson-visual-head"><span className="visual-label">刺激から反応まで</span><span className="visual-note">神経の情報の流れ</span></div><Route items={['刺激','感覚器官','感覚神経','脳・せきずい','運動神経','筋肉','反応']} accent="gold"/><div className="reflex-card"><b>反射の例：熱いものに触れた</b><p>せきずいを通る短い経路で、脳で考える前に手を引く命令が出ます。</p></div><p className="diagram-caption">高校では、神経系と内分泌系が体内環境を保つ調節にも関わることへ学びを広げます。</p></div>}
 
-function Visual({id}:{id:LessonId}){if(id==='heart')return <HeartLesson/>;if(id==='blood')return <BloodLesson/>;if(id==='respiratory')return <RespiratoryLesson/>;if(id==='urinary')return <UrinaryLesson/>;if(id==='liver')return <LiverLesson/>;if(id==='eye')return <EyeLesson/>;return <NervousLesson/>;}
+function Visual({id}:{id:LessonId}){if(id==='heart')return <HeartLab/>;if(id==='blood')return <BloodLesson/>;if(id==='respiratory')return <RespiratoryLesson/>;if(id==='urinary')return <UrinaryLesson/>;if(id==='liver')return <LiverLesson/>;if(id==='eye')return <EyeLab/>;return <NervousLesson/>;}
 
 export interface LearningPanelProps {open:boolean;lessonId:LessonId;onClose:()=>void;onLessonChange:(id:LessonId)=>void;onFocus:(lesson:Lesson)=>void}
 
 export default function LearningPanel({open,lessonId,onClose,onLessonChange,onFocus}:LearningPanelProps){
+ const [expanded,setExpanded]=useState(false);
  const lesson=LESSONS.find(item=>item.id===lessonId)??LESSONS[0];
  return <>
   {open&&<button className="learning-scrim" aria-label="授業モードを閉じる" onClick={onClose}/>} 
-  {open&&<aside className="learning-panel glass" aria-label="授業で学ぶ">
+  {open&&<aside className={`learning-panel glass${expanded?' learning-expanded':''}`} aria-label="授業で学ぶ">
    <header className="learning-header"><div><div className="eyebrow"><BookOpen size={14}/> 授業で学ぶ</div><h2>人体のはたらき</h2><p>中学校理科を中心に、高校生物へのつながりまで。</p></div><Button variant="ghost" className="icon-button" onClick={onClose} aria-label="授業モードを閉じる"><X size={20}/></Button></header>
    <nav className="lesson-nav" aria-label="学習テーマ">{LESSONS.map(item=><button key={item.id} className={item.id===lesson.id?'active':''} onClick={()=>onLessonChange(item.id)}><span className="lesson-nav-dot" style={{background:item.color}}/>{item.title}</button>)}</nav>
    <div className="learning-scroll">
+    <button className="lab-expand" aria-pressed={expanded} onClick={()=>setExpanded(!expanded)}>{expanded?'3Dモデルと並べる':'学習図を大きく表示'}</button>
     <div className="lesson-heading"><div><span className="lesson-kicker">{lesson.id==='blood'?'血液を模式図で確認':'3Dモデル＋学習図'}</span><h3>{lesson.title}</h3><p>{lesson.subtitle}</p></div><span className="lesson-index">{LESSONS.findIndex(item=>item.id===lesson.id)+1} / {LESSONS.length}</span></div>
     <Button className="lesson-focus" onClick={()=>onFocus(lesson)}><MousePointer2 size={16}/> 3Dで{lesson.title}を見る<ChevronRight size={16}/></Button>
     <Visual id={lesson.id}/>
