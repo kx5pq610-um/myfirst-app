@@ -7,8 +7,8 @@ import './organ-model.css';
 import {CHAMBERS,FLOW_STEPS,createHeartFlow} from './heart-flow';
 
 type Kind='heart'|'eye';
-interface Settings {running:boolean;bpm:number;volume:number;muted:boolean;cut:boolean;spread:number;drag:boolean;near:boolean;selected:string;solo:boolean;reset:number;flowPlaying:boolean;flowStep:number}
-const defaults:Settings={running:false,bpm:72,volume:.5,muted:false,cut:false,spread:0,drag:false,near:false,selected:'',solo:false,reset:0,flowPlaying:false,flowStep:0};
+interface Settings {running:boolean;bpm:number;volume:number;muted:boolean;cut:boolean;spread:number;drag:boolean;near:boolean;selected:string;solo:boolean;reset:number;flowPlaying:boolean;flowStep:number;coupled:boolean}
+const defaults:Settings={running:false,bpm:72,volume:.5,muted:false,cut:false,spread:0,drag:false,near:false,selected:'',solo:false,reset:0,flowPlaying:false,flowStep:0,coupled:false};
 function organParts(atlas:Atlas,kind:Kind){
  const names=kind==='heart'?['heart','wall of ventricle']:['right eye','right optic nerve'];
  const ids=new Set(atlas.concepts.filter(c=>names.includes(c.name.toLowerCase())).flatMap(c=>c.elements));
@@ -40,8 +40,8 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
  latest.current=settings;
  const update=(p:Partial<Settings>)=>setSettings(s=>({...s,...p}));
  async function start(){
-  if(settings.running){update({running:false});return;}
-  update({running:true});
+  if(settings.running){update({running:false,flowPlaying:false});return;}
+  update({running:true,coupled:true,flowPlaying:false,cut:true,solo:false,drag:false,spread:0});
   try{audio.current??=new AudioContext();if(!master.current){master.current=audio.current.createGain();master.current.connect(audio.current.destination);}setAudioError('音声を準備しています…');void audio.current.resume().then(()=>setAudioError('')).catch(()=>setAudioError('音を開始できませんでした。Chromeで開き直し、端末の音量・ミュートを確認してください。'));}catch{setAudioError('音を開始できませんでした。Chromeで開き直し、端末の音量・ミュートを確認してください。');}
  }
  useEffect(()=>{if(master.current)master.current.gain.value=settings.muted||!settings.running?0:settings.volume;},[settings.muted,settings.volume,settings.running]);
@@ -108,12 +108,12 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
     if(kind==='heart'){p.mesh.material.transparent=overview&&!cavity;p.mesh.material.opacity=overview&&!cavity?.07:1;p.mesh.material.depthWrite=!(overview&&!cavity);if(chamber)p.mesh.material.color.set(chamber.color);}
     p.mesh.position.copy(p.base).addScaledVector(p.spread,s.spread).add(p.offset);
     if(overview&&chamber)p.mesh.position.set(chamber.position[0],chamber.position[1],chamber.position[2]);
-    let amount=1;if(kind==='heart'&&s.running){const atrium=n.includes('atrium');const start=atrium?0:.18,duration=atrium?.18:.34,t=(cycle-start)/duration;amount=1-(t>=0&&t<=1?Math.sin(t*Math.PI)*(atrium?.065:.09):0);}
+    let amount=1;if(kind==='heart'&&(s.running||s.coupled)){const atrium=n.includes('atrium');const start=atrium?0:.18,duration=atrium?.18:.34,t=(cycle-start)/duration;amount=1-(t>=0&&t<=1?Math.sin(t*Math.PI)*(atrium?.065:.09):0);}
     p.mesh.scale.setScalar(amount*(overview&&cavity?.68:1));if(kind==='eye'&&n==='right lens')p.mesh.scale.set(1,1,s.near?1.35:1);
    }
    const soloKey=s.solo?s.selected:'';
    if(soloKey!==lastSolo){if(soloKey){const p=pieces.find(p=>p.part.id===soloKey);if(p){const radius=p.mesh.geometry.boundingSphere?.radius??.3;controls.target.copy(p.mesh.position);camera.position.copy(p.mesh.position).add(new T.Vector3(.5,.15,1).normalize().multiplyScalar(Math.max(.6,radius*3.6/Math.min(1,camera.aspect))));}}else fit();lastSolo=soloKey;}
-   controls.update();flow?.update(camera,overview&&loaded,s.flowStep,flowProgress);if(loaded)renderer.render(scene,camera);
+   controls.update();flow?.update(camera,overview&&loaded,s.flowStep,flowProgress,s.coupled,s.running,stage,dt,s.bpm);if(loaded)renderer.render(scene,camera);
   }raf=requestAnimationFrame(animate);
   return()=>{disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();controls.dispose();flow?.dispose();for(const p of pieces){p.mesh.geometry.dispose();p.mesh.material.dispose();}renderer.dispose();renderer.domElement.remove();};
  },[atlas,kind,parts]);
@@ -123,16 +123,18 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
   <div className="model-workspace"><div className="model-stage"><div ref={host} className="model-canvas"/>{!ready&&!error&&<p className="model-status" role="status">器官の3Dデータを読み込み中…</p>}{error&&<p className="model-status" role="alert">{error}</p>}<div className="model-caption">{kind==='heart'&&settings.cut?'四室を見比べる学習用配置 · 位置と間隔を調整しています':settings.drag?'部品をつかんで移動 · 空いている所で回転':'ドラッグで回転 · ピンチ／ホイールで拡大'}<br/>{selected?partName(selected):'部品をタップして選択'}</div>{kind==='heart'&&<div className="model-beat" role="status">{phase}<small>{settings.bpm}回／分 · {settings.muted?'消音':`音量 ${Math.round(settings.volume*100)}%`}</small></div>}</div>
   <aside className="model-tools">
    {kind==='heart'&&<section className="four-chamber-tools" aria-label="二心房・二心室と血液の流れ">
+    <button className="model-primary" disabled={!ready} onClick={()=>void start()}>{settings.running?'■ 拍動・心音・血流を一緒に停止':'▶ 拍動・心音・血流を一緒に再生'}</button>
+    {settings.coupled&&<div className="flow-current" role="status"><strong>{phase}</strong><p>心房から心室へ入る流れと、心室から肺・全身へ出る流れが切り替わります。左右の心室は一緒に縮みます。</p><small>点の動きは経路を示す模式表現です。実際の流速や一周の時間は再現していません。</small></div>}
     <button className="model-primary" aria-pressed={settings.cut} onClick={()=>update({cut:!settings.cut,solo:false,spread:0,drag:false,selected:'',reset:settings.reset+1})}>{settings.cut?'心臓の外側に戻す':'四つの部屋が見える断面へ'}</button>
     {settings.cut&&<><h3>二心房・二心室</h3><div className="chamber-picks">{CHAMBERS.map(c=><button key={c.id} aria-pressed={settings.selected===c.id} onClick={()=>update({selected:c.id,solo:false})}>{c.name}<small>{c.role}</small></button>)}</div>
     <p className="flow-legend">青：酸素が少ない ／ 赤：酸素が多い<br/>実際の血液はどちらも赤色です。</p>
-    <div className="model-tool-row"><button disabled={!ready} onClick={()=>update({flowPlaying:!settings.flowPlaying})}>{settings.flowPlaying?'血流を一時停止':'▶ 血液の流れを追う'}</button><button onClick={()=>update({flowPlaying:false,flowStep:(settings.flowStep+1)%8})}>次の流れ</button></div>
-    <div className="flow-current" aria-live="polite"><strong>{settings.flowStep+1}/8　{FLOW_STEPS[settings.flowStep].text}</strong><p>{FLOW_STEPS[settings.flowStep].detail}</p></div>
-    <details><summary>血液の道すじを選ぶ</summary>{FLOW_STEPS.map((step,i)=><button key={step.text} aria-pressed={settings.flowStep===i} onClick={()=>update({flowPlaying:false,flowStep:i})}>{i+1}. {step.text}</button>)}</details>
+    <p>一周する順序をゆっくり確認する</p><div className="model-tool-row"><button disabled={!ready} onClick={()=>update({flowPlaying:!settings.flowPlaying,coupled:false,running:false})}>{settings.flowPlaying?'経路の案内を一時停止':'▶ 経路を順番に追う'}</button><button onClick={()=>update({flowPlaying:false,coupled:false,running:false,flowStep:(settings.flowStep+1)%8})}>次の流れ</button></div>
+    {!settings.coupled&&<div className="flow-current" aria-live="polite"><strong>{settings.flowStep+1}/8　{FLOW_STEPS[settings.flowStep].text}</strong><p>{FLOW_STEPS[settings.flowStep].detail}</p></div>}
+    <details><summary>血液の道すじを選ぶ</summary>{FLOW_STEPS.map((step,i)=><button key={step.text} aria-pressed={settings.flowStep===i} onClick={()=>update({flowPlaying:false,coupled:false,running:false,flowStep:i})}>{i+1}. {step.text}</button>)}</details>
     <p className="flow-note">元の四室の形を使い、見比べやすいよう間隔をあけた学習用の内部表示です。色付きの立体は血液が入る空間。線と点は経路の模式表現で、実際の血管形状・流速ではありません。左右の心室はほぼ同時に縮みます。</p>
     </>}
    </section>}
-   {kind==='heart'?<><button className="model-primary" disabled={!ready} onClick={()=>void start()}>{settings.running?'拍動と心音を止める':'▶ 心音付きで拍動を再生'}</button><label>心拍数：{settings.bpm}回／分<input type="range" min="40" max="140" step="1" value={settings.bpm} onChange={e=>update({bpm:+e.target.value})}/></label><label>心音の音量<input type="range" min="0" max="1" step=".05" value={settings.volume} onChange={e=>update({volume:+e.target.value})}/></label><button aria-pressed={settings.muted} onClick={()=>update({muted:!settings.muted})}>{settings.muted?'心音を入れる':'心音を消す'}</button><p>「ドッ」は心室が縮み始めるころ、「クン」はゆるみ始めるころ。弁が閉じる時の心音を合成音で表しています。</p>{audioError&&<p role="alert">{audioError}</p>}</>:<><button aria-pressed={settings.near} onClick={()=>update({near:!settings.near})}>{settings.near?'近くを見る：水晶体が厚い':'遠くを見る：水晶体が薄い'}</button><p>水晶体を選び、「選んだ部品だけ」で横から形を比べよう。</p></>}
+   {kind==='heart'?<><label>心拍数：{settings.bpm}回／分<input type="range" min="40" max="140" step="1" value={settings.bpm} onChange={e=>update({bpm:+e.target.value})}/></label><label>心音の音量<input type="range" min="0" max="1" step=".05" value={settings.volume} onChange={e=>update({volume:+e.target.value})}/></label><button aria-pressed={settings.muted} onClick={()=>update({muted:!settings.muted})}>{settings.muted?'心音を入れる':'心音を消す'}</button><p>「ドッ」は心室が縮み始めるころ、「クン」はゆるみ始めるころ。弁が閉じる時の心音を合成音で表しています。</p>{audioError&&<p role="alert">{audioError}</p>}</>:<><button aria-pressed={settings.near} onClick={()=>update({near:!settings.near})}>{settings.near?'近くを見る：水晶体が厚い':'遠くを見る：水晶体が薄い'}</button><p>水晶体を選び、「選んだ部品だけ」で横から形を比べよう。</p></>}
    <div className="model-tool-row">{kind==='eye'&&<button aria-pressed={settings.cut} onClick={()=>update({cut:!settings.cut})}>半分ひらく</button>}<button aria-pressed={settings.drag} onClick={()=>update({drag:!settings.drag,cut:false,running:false})}>部品をつかむ</button></div>
    <label>模型を分解<input type="range" min="0" max="1" step=".01" value={settings.spread} onChange={e=>update({spread:+e.target.value,running:false,cut:false})}/></label>
    <label>部品を選ぶ<select aria-label="3D模型の部品" value={settings.selected} onChange={e=>update({selected:e.target.value})}><option value="">模型をタップして選べます</option>{parts.map(p=><option key={p.id} value={p.id}>{partName(p)}</option>)}</select></label>

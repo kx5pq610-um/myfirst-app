@@ -35,15 +35,27 @@ export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:str
  const tubes=curves.map((curve,i)=>{const m=new T.MeshBasicMaterial({color:FLOW_STEPS[i].color,transparent:true,opacity:.22,depthTest:false});const mesh=new T.Mesh(new T.TubeGeometry(curve,40,.013,6,false),m);mesh.renderOrder=15;group.add(mesh);return mesh;});
  const arrows=curves.map((curve,i)=>{const arrow=new T.ArrowHelper(curve.getTangent(.6).normalize(),curve.getPoint(.6),.14,FLOW_STEPS[i].color,.09,.06);for(const object of [arrow.line,arrow.cone]){const material=object.material as T.Material;material.depthTest=false;object.renderOrder=16;}group.add(arrow);return arrow;});
  const bead=new T.Mesh(new T.SphereGeometry(.055,16,12),new T.MeshBasicMaterial({color:'#267bb8',depthTest:false}));bead.renderOrder=20;group.add(bead);
+ // Multiple particles make simultaneous circulation visible. AV and outlet routes
+ // move in their respective simplified cardiac phases; venous return continues.
+ const offsets=new Float32Array(8);
+ const streams=curves.map((_,i)=>Array.from({length:i===3||i===7?2:5},()=>{const mesh=new T.Mesh(new T.SphereGeometry(.028,10,8),new T.MeshBasicMaterial({color:FLOW_STEPS[i].color,depthTest:false}));mesh.renderOrder=19;group.add(mesh);return mesh;}));
  const layer=document.createElement('div');layer.className='heart-label-layer';host.appendChild(layer);
  const vessel=document.createElement('span');vessel.className='heart-vessel-label';layer.appendChild(vessel);
  const labels=[...CHAMBERS.map(c=>{const el=document.createElement('button');el.textContent=c.name;el.className='heart-chamber-label';el.style.borderColor=c.color;el.setAttribute('aria-label',`${c.name}：${c.role}`);el.onclick=()=>onChamber(c.id);layer.appendChild(el);return {el,point:new T.Vector3(...c.position)};}),...[{text:'肺：酸素を受け取る',point:lung},{text:'全身：酸素を渡す',point:body}].map(item=>{const el=document.createElement('span');el.textContent=item.text;el.className='heart-route-label';layer.appendChild(el);return {el,point:item.point};})];
  const projected=new T.Vector3();
  return {
-  update(camera:T.Camera,visible:boolean,step:number,progress:number){group.visible=visible;layer.hidden=!visible;if(!visible)return;const width=host.clientWidth,height=host.clientHeight;
+  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,stage:number,dt:number,bpm:number){group.visible=visible;layer.hidden=!visible;if(!visible)return;const width=host.clientWidth,height=host.clientHeight;
    labels.forEach(({el,point},i)=>{projected.copy(point).project(camera);el.style.left=`${(projected.x*.5+.5)*width}px`;el.style.top=`${(-projected.y*.5+.5)*height+(i<4?-40:i===5?-18:0)}px`;el.hidden=projected.z>1||projected.z< -1;el.classList.toggle('active',i===FLOW_STEPS[step].chamber);});
    tubes.forEach((t,i)=>{t.material.opacity=i===step?.95:.16;});arrows.forEach((a,i)=>{a.visible=i===step;});bead.position.copy(curves[step].getPoint(progress));bead.material.color.set(FLOW_STEPS[step].color);
-   const names=['大静脈','三尖弁','肺動脈','','肺静脈','僧帽弁','大動脈',''];vessel.textContent=names[step];vessel.hidden=!names[step];projected.copy(curves[step].getPoint(.5)).project(camera);vessel.style.left=`${(projected.x*.5+.5)*width}px`;vessel.style.top=`${(-projected.y*.5+.5)*height-18}px`;vessel.style.color=FLOW_STEPS[step].color;
+   bead.visible=!coupled;
+   streams.forEach((particles,i)=>{
+    const active=i===1||i===5?stage!==1:i===2||i===6?stage===1:true;
+    if(coupled&&running&&active)offsets[i]=(offsets[i]+dt*bpm/60*(i===1||i===5?1.1:.48))%1;
+    particles.forEach((particle,j)=>{particle.visible=coupled;particle.position.copy(curves[i].getPoint((offsets[i]+j/particles.length)%1));particle.scale.setScalar(active?1:.65);if(i===3||i===7){const t=(offsets[i]+j/particles.length)%1;particle.material.color.set(i===3?'#267bb8':'#c34052').lerp(new T.Color(i===3?'#c34052':'#267bb8'),t);}});
+    if(coupled){tubes[i].material.opacity=active?.65:.18;arrows[i].visible=active;}
+   });
+   if(coupled)labels.slice(0,4).forEach(({el},i)=>el.classList.toggle('active',stage===1?i===1||i===3:i===0||i===2));
+   const names=['大静脈','三尖弁','肺動脈','','肺静脈','僧帽弁','大動脈',''];vessel.textContent=names[step];vessel.hidden=coupled||!names[step];projected.copy(curves[step].getPoint(.5)).project(camera);vessel.style.left=`${(projected.x*.5+.5)*width}px`;vessel.style.top=`${(-projected.y*.5+.5)*height-18}px`;vessel.style.color=FLOW_STEPS[step].color;
   },
   dispose(){scene.remove(group);group.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>m.dispose());}});layer.remove();}
  };
