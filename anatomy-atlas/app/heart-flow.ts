@@ -2,10 +2,11 @@ import * as T from 'three';
 
 // The original cavity meshes are opened out for teaching; these are not vessel geometries.
 export const CHAMBERS=[
- {id:'FJ2424',name:'右心房',position:[-.62,.48,0],color:'#387fad',role:'全身から戻った血液を受け取る'},
- {id:'FJ2423',name:'右心室',position:[-.62,-.48,0],color:'#426fb1',role:'肺動脈を通して肺へ送る'},
- {id:'FJ2425',name:'左心房',position:[.62,.48,0],color:'#c05260',role:'肺静脈から血液を受け取る'},
- {id:'FJ2422',name:'左心室',position:[.62,-.48,0],color:'#a94354',role:'大動脈を通して全身へ送る'},
+ // Chamber centers in the model's native coordinates, normalized around heart origin.
+ {id:'FJ2424',name:'右心房',position:[-.641,.079,-.007],color:'#b66b64',role:'全身から戻った血液を受け取る'},
+ {id:'FJ2423',name:'右心室',position:[-.08,-.123,.362],color:'#b66b64',role:'肺動脈を通して肺へ送る'},
+ {id:'FJ2425',name:'左心房',position:[-.131,.182,-.424],color:'#b66b64',role:'肺静脈から血液を受け取る'},
+ {id:'FJ2422',name:'左心室',position:[.291,-.156,-.016],color:'#b66b64',role:'大動脈を通して全身へ送る'},
 ] as const;
 export const FLOW_STEPS=[
  {text:'全身 → 大静脈 → 右心房',detail:'全身で酸素を渡した血液が、大静脈から右心房へ戻ります。',chamber:0,color:'#267bb8'},
@@ -45,7 +46,8 @@ export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:str
  const projected=new T.Vector3();
  return {
   update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,stage:number,dt:number,bpm:number){group.visible=visible;layer.hidden=!visible;if(!visible)return;const width=host.clientWidth,height=host.clientHeight;
-   labels.forEach(({el,point},i)=>{projected.copy(point).project(camera);el.style.left=`${(projected.x*.5+.5)*width}px`;el.style.top=`${(-projected.y*.5+.5)*height+(i<4?-40:i===5?-18:0)}px`;el.hidden=projected.z>1||projected.z< -1;el.classList.toggle('active',i===FLOW_STEPS[step].chamber);});
+   const chamberLabelX=[-24,-42,34,42],chamberLabelY=[-30,15,-25,25];
+   labels.forEach(({el,point},i)=>{projected.copy(point).project(camera);el.style.left=`${(projected.x*.5+.5)*width+(i<4?chamberLabelX[i]:0)}px`;el.style.top=`${(-projected.y*.5+.5)*height+(i<4?chamberLabelY[i]:i===5?-18:0)}px`;el.hidden=projected.z>1||projected.z< -1;el.classList.toggle('active',i===FLOW_STEPS[step].chamber);});
    tubes.forEach((t,i)=>{t.material.opacity=i===step?.95:.16;});arrows.forEach((a,i)=>{a.visible=i===step;});bead.position.copy(curves[step].getPoint(progress));bead.material.color.set(FLOW_STEPS[step].color);
    bead.visible=!coupled;
    streams.forEach((particles,i)=>{

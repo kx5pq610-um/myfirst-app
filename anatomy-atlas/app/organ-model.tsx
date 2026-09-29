@@ -5,7 +5,6 @@ import {decodeModelResponse} from './model-download';
 import {localizeAnatomyName,type Atlas,type Part} from './anatomy';
 import './organ-model.css';
 import {CHAMBERS,FLOW_STEPS,createHeartFlow} from './heart-flow';
-import {createChamberWall} from './chamber-wall';
 
 type Kind='heart'|'eye';
 interface Settings {running:boolean;bpm:number;volume:number;muted:boolean;cut:boolean;spread:number;drag:boolean;near:boolean;selected:string;solo:boolean;reset:number;flowPlaying:boolean;flowStep:number;coupled:boolean;opened:string[]}
@@ -61,7 +60,7 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
   const center=box.getCenter(new T.Vector3());let extent=Math.max(...box.getSize(new T.Vector3()).toArray());
   if(kind==='eye'){const lens=parts.find(p=>p.name.toLowerCase()==='right lens');if(lens){const lensBox=new T.Box3(new T.Vector3().fromArray(lens.bounds[0]),new T.Vector3().fromArray(lens.bounds[1]));lensBox.getCenter(center);const diameter=Math.max(...lensBox.getSize(new T.Vector3()).toArray());center.z-=diameter*.7;extent=diameter*3.2;}}
   const scale=2/extent,plane=new T.Plane(kind==='eye'?new T.Vector3(-1,0,0):new T.Vector3(0,0,-1),0);
-  type Piece={mesh:T.Mesh<T.BufferGeometry,T.MeshStandardMaterial>;part:Part;base:T.Vector3;offset:T.Vector3;spread:T.Vector3;wall?:ReturnType<typeof createChamberWall>};const pieces:Piece[]=[];
+ type Piece={mesh:T.Mesh<T.BufferGeometry,T.MeshStandardMaterial>;part:Part;base:T.Vector3;offset:T.Vector3;spread:T.Vector3};const pieces:Piece[]=[];
   function fit(){const overview=kind==='heart'&&latest.current.cut;controls.target.set(0,0,0);camera.position.set(overview?0:kind==='eye'?2.5:1,overview?0:.6,Math.max(overview?5.5:4,(overview?4.2:3)/Math.max(.35,camera.aspect)));controls.update();}
   const resize=()=>{if(!el.clientWidth||!el.clientHeight)return;renderer.setSize(el.clientWidth,el.clientHeight);camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();fit();};const observer=new ResizeObserver(resize);observer.observe(el);resize();
   (async()=>{try{
@@ -77,9 +76,7 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
      const glass=kind==='eye'&&/cornea|vitreous/i.test(p.name);const m=new T.MeshStandardMaterial({color:tint(p,kind),roughness:.45,metalness:.03,side:T.DoubleSide,transparent:glass,opacity:glass?.18:1,depthWrite:!glass});const mesh=new T.Mesh(g,m);base.sub(center).multiplyScalar(scale);mesh.position.copy(base);group.add(mesh);
      const spread=base.clone();if(spread.length()<.05)spread.set(.2,0,.4);spread.normalize().multiplyScalar(.65);
      if(kind==='eye'&&/lens|cornea|iris/i.test(p.name))spread.set(/lens/i.test(p.name)?-.65:/iris/i.test(p.name)?-.25:.25,0,1);
-     const wall=kind==='heart'&&CHAMBERS.some(c=>c.id===p.id)?createChamberWall(g,p.id):undefined;
-     if(wall){mesh.add(wall.outer,wall.rim);wall.outer.userData.chamberId=p.id;wall.rim.userData.chamberId=p.id;}
-     pieces.push({mesh,part:p,base,offset:new T.Vector3(),spread,wall});
+     pieces.push({mesh,part:p,base,offset:new T.Vector3(),spread});
     }
    }
    loaded=true;setReady(true);
@@ -106,25 +103,27 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
    if(s.running&&stage!==lastStage){if(stage===1)sound(true);if(stage===2)sound(false);setPhase(stage===0?'心房から心室へ':stage===1?'ドッ：心室が縮む':'クン：心室がゆるむ');lastStage=stage;}
    if(!s.running&&lastStage!==-1){setPhase('一時停止中');lastStage=-1;}
    for(const p of pieces){
-    const n=p.part.name.toLowerCase(),cavity=n.includes('cavity'),chamber=CHAMBERS.find(c=>c.id===p.part.id),shell=!!chamber&&s.cut,opened=shell&&s.opened.includes(p.part.id);p.mesh.visible=(!s.solo||s.selected===p.part.id)&&(!cavity||s.cut||s.selected===p.part.id)&&(!overview||cavity);
-    p.mesh.material.clippingPlanes=(kind==='heart'?opened:s.cut)?[plane]:[];p.mesh.material.emissive.set(p.part.id===s.selected?'#26130c':'#000000');
-    if(kind==='heart'){p.mesh.material.transparent=false;p.mesh.material.opacity=1;p.mesh.material.depthWrite=true;if(chamber){p.mesh.material.color.set(shell?'#b97066':chamber.color);p.mesh.material.side=shell?T.BackSide:T.DoubleSide;}}
-    if(p.wall){p.wall.outer.visible=shell;p.wall.rim.visible=opened;p.wall.outer.material.clippingPlanes=opened?[plane]:[];p.wall.outer.material.emissive.copy(p.mesh.material.emissive);}
+    const n=p.part.name.toLowerCase(),cavity=n.includes('cavity'),chamber=CHAMBERS.find(c=>c.id===p.part.id);
+    const wallChamber=p.part.id==='FJ2439'?'FJ2424':p.part.id==='FJ2438'?'FJ2425':'';
+    const isVentricleWall=p.part.id==='FJ2428';
+    const opened=cavity?s.opened.includes(p.part.id):wallChamber?s.opened.includes(wallChamber):isVentricleWall?s.opened.includes('FJ2423')||s.opened.includes('FJ2422'):s.opened.length===CHAMBERS.length;
+    p.mesh.visible=(!s.solo||s.selected===p.part.id)&&(!cavity||s.cut||s.selected===p.part.id);
+    p.mesh.material.clippingPlanes=(kind==='heart'?s.cut&&opened:s.cut)?[plane]:[];p.mesh.material.emissive.set(p.part.id===s.selected?'#26130c':'#000000');
+    if(kind==='heart'){p.mesh.material.transparent=false;p.mesh.material.opacity=1;p.mesh.material.depthWrite=true;if(chamber){p.mesh.material.color.set('#b66b64');p.mesh.material.side=T.DoubleSide;}}
     p.mesh.position.copy(p.base).addScaledVector(p.spread,s.spread).add(p.offset);
-    if(shell&&chamber)p.mesh.position.set(chamber.position[0],chamber.position[1],chamber.position[2]);
     let amount=1;if(kind==='heart'&&(s.running||s.coupled)){const atrium=n.includes('atrium');const start=atrium?0:.18,duration=atrium?.18:.34,t=(cycle-start)/duration;amount=1-(t>=0&&t<=1?Math.sin(t*Math.PI)*(atrium?.065:.09):0);}
-    p.mesh.scale.setScalar(amount*(shell?.78:1));if(kind==='eye'&&n==='right lens')p.mesh.scale.set(1,1,s.near?1.35:1);
+    p.mesh.scale.setScalar(amount);if(kind==='eye'&&n==='right lens')p.mesh.scale.set(1,1,s.near?1.35:1);
    }
    const soloKey=s.solo?s.selected:'';
    if(soloKey!==lastSolo){if(soloKey){const p=pieces.find(p=>p.part.id===soloKey);if(p){const radius=p.mesh.geometry.boundingSphere?.radius??.3;controls.target.copy(p.mesh.position);camera.position.copy(p.mesh.position).add(new T.Vector3(.5,.15,1).normalize().multiplyScalar(Math.max(.6,radius*3.6/Math.min(1,camera.aspect))));}}else fit();lastSolo=soloKey;}
    controls.update();flow?.update(camera,overview&&loaded,s.flowStep,flowProgress,s.coupled,s.running,stage,dt,s.bpm);if(loaded)renderer.render(scene,camera);
   }raf=requestAnimationFrame(animate);
-  return()=>{disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();controls.dispose();flow?.dispose();for(const p of pieces){p.wall?.dispose();p.mesh.geometry.dispose();p.mesh.material.dispose();}renderer.dispose();renderer.domElement.remove();};
+  return()=>{disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();controls.dispose();flow?.dispose();for(const p of pieces){p.mesh.geometry.dispose();p.mesh.material.dispose();}renderer.dispose();renderer.domElement.remove();};
  },[atlas,kind,parts]);
  const selected=parts.find(p=>p.id===settings.selected);
  return <section className="model-workbench" role="dialog" aria-modal="true" aria-label="手で動かす3D模型">
   <header><div><span>手で動かす3D模型 · BodyParts3D</span><h2>{kind==='heart'?'心臓の四つの部屋と血液の流れ':'目を回して、分解してみる'}</h2></div><button onClick={onClose}>閉じる ×</button></header>
-  <div className="model-workspace"><div className="model-stage"><div ref={host} className="model-canvas"/>{!ready&&!error&&<p className="model-status" role="status">器官の3Dデータを読み込み中…</p>}{error&&<p className="model-status" role="alert">{error}</p>}<div className="model-caption">{kind==='heart'&&settings.cut?'四室を見比べる学習用配置 · 位置と間隔を調整しています':settings.drag?'部品をつかんで移動 · 空いている所で回転':'ドラッグで回転 · ピンチ／ホイールで拡大'}<br/>{selected?partName(selected):'部品をタップして選択'}</div>{kind==='heart'&&<div className="model-beat" role="status">{phase}<small>{settings.bpm}回／分 · {settings.muted?'消音':`音量 ${Math.round(settings.volume*100)}%`}</small></div>}</div>
+  <div className="model-workspace"><div className="model-stage"><div ref={host} className="model-canvas"/>{!ready&&!error&&<p className="model-status" role="status">器官の3Dデータを読み込み中…</p>}{error&&<p className="model-status" role="alert">{error}</p>}<div className="model-caption">{kind==='heart'&&settings.cut?'心臓の位置関係を保った断面表示':settings.drag?'部品をつかんで移動 · 空いている所で回転':'ドラッグで回転 · ピンチ／ホイールで拡大'}<br/>{selected?partName(selected):'部品をタップして選択'}</div>{kind==='heart'&&<div className="model-beat" role="status">{phase}<small>{settings.bpm}回／分 · {settings.muted?'消音':`音量 ${Math.round(settings.volume*100)}%`}</small></div>}</div>
   <aside className="model-tools">
    {kind==='heart'&&<section className="four-chamber-tools" aria-label="二心房・二心室と血液の流れ">
     <button className="model-primary" disabled={!ready} onClick={()=>void start()}>{settings.running?'■ 拍動・心音・血流を一緒に停止':'▶ 拍動・心音・血流を一緒に再生'}</button>
@@ -136,7 +135,7 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
     <p>一周する順序をゆっくり確認する</p><div className="model-tool-row"><button disabled={!ready} onClick={()=>update({flowPlaying:!settings.flowPlaying,coupled:false,running:false})}>{settings.flowPlaying?'経路の案内を一時停止':'▶ 経路を順番に追う'}</button><button onClick={()=>update({flowPlaying:false,coupled:false,running:false,flowStep:(settings.flowStep+1)%8})}>次の流れ</button></div>
     {!settings.coupled&&<div className="flow-current" aria-live="polite"><strong>{settings.flowStep+1}/8　{FLOW_STEPS[settings.flowStep].text}</strong><p>{FLOW_STEPS[settings.flowStep].detail}</p></div>}
     <details><summary>血液の道すじを選ぶ</summary>{FLOW_STEPS.map((step,i)=><button key={step.text} aria-pressed={settings.flowStep===i} onClick={()=>update({flowPlaying:false,coupled:false,running:false,flowStep:i})}>{i+1}. {step.text}</button>)}</details>
-    <p className="flow-note">BodyParts3Dの四室の内腔形状に、観察用の壁と切り口を加えています。壁の厚み・配置は学習用で、実測した心筋や正確な解剖断面ではありません。各部屋の前半分を取り除いて内側を見せています。線と点は血流の模式表現です。</p>
+    <p className="flow-note">心房・心室の壁、弁、血管、内側の空間を含む3D部品を元の位置で表示します。断面は観察用に前側を切り取ります。線と点は血流の模式表現です。</p>
     <a href="https://www.nhlbi.nih.gov/health/heart/anatomy" target="_blank" rel="noreferrer">構造の参考：米国NIH・心臓のつくり</a>
     </>}
    </section>}
