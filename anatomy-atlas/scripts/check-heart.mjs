@@ -61,3 +61,24 @@ flow.update(camera,true,0,0,true,false,heartCycle(.38),.016,72,false,identity);
 assert.equal(scene.children[0].visible,false,'The flow overlay must be switchable');
 flow.dispose();assert.equal(scene.children.length,0);
 console.log('PASS: flow scene matrices, valve gating, particle pause/resume, hidden overlay, and resource cleanup.');
+
+const {HEART_OBSERVATION_STEPS,heartObservationState,heartFocusOpacity,heartFlowWindow}=await import('../app/heart-observation.ts');
+for(const step of HEART_OBSERVATION_STEPS){const state=heartObservationState(step.phase),beat=heartCycle(step.phase);assert.equal(state.avOpen,beat.avOpen);assert.equal(state.outletOpen,beat.outletOpen);}
+assert.equal(heartFocusOpacity('FJ2425','FJ2425',true),1);
+assert(heartFocusOpacity('FJ2423','FJ2425',true)<.2);
+assert.equal(heartFocusOpacity('FJ2423','FJ2425',false),1);
+assert.equal(heartFocusOpacity('FJ2423','FJ2933',true),1);
+assert.deepEqual(heartFlowWindow(2,'heart'),[0,.5]);
+assert.deepEqual(heartFlowWindow(6,'heart'),[0,.4]);
+assert.equal(heartFlowWindow(3,'heart'),null);
+assert.deepEqual(heartFlowWindow(3,'all'),[0,1]);
+const scene2=new T.Scene(),flow2=createHeartFlow(scene2,host,()=>{},landmarks);
+flow2.update(camera,true,2,0,true,true,heartCycle(.38),.016,72,true,identity,'heart',false,'FJ2425');
+const streams2=[];scene2.traverse(o=>{if(o instanceof T.InstancedMesh)streams2.push(o);});
+assert(streams2[2].visible&&streams2[6].visible,'Heart scope must show ejection into both proximal vessels');
+assert(!streams2[3].visible&&!streams2[7].visible,'Heart scope should hide distant lung/body exchange loops');
+assert(streams2.every(o=>o.material.depthTest),'An opaque wall should occlude blood unless xray is enabled');
+flow2.update(camera,true,2,0,true,false,heartCycle(.38),.016,72,true,identity,'heart',true);
+assert(streams2.every(o=>!o.material.depthTest));
+flow2.dispose();assert.equal(scene2.children.length,0);
+console.log('PASS: phase controls, focused chambers, proximal ventricular outflow, and explicit xray rendering.');

@@ -1,11 +1,12 @@
 import * as T from 'three';
-import type {heartCycle} from './heart-cycle';
+import {heartFlowWindow} from './heart-observation.ts';
+import type {heartCycle} from './heart-cycle.ts';
 
 export const CHAMBERS=[
- {id:'FJ2424',name:'右心房',position:[-.641,.079,-.007],color:'#377ea7',role:'全身から戻った血液を受け取る'},
- {id:'FJ2423',name:'右心室',position:[-.08,-.123,.362],color:'#377ea7',role:'肺動脈を通して肺へ送る'},
- {id:'FJ2425',name:'左心房',position:[-.131,.182,-.424],color:'#bf4653',role:'肺静脈から血液を受け取る'},
- {id:'FJ2422',name:'左心室',position:[.291,-.156,-.016],color:'#bf4653',role:'大動脈を通して全身へ送る'},
+ {id:'FJ2424',name:'右心房',position:[-.641,.079,-.007],color:'#377ea7',role:'全身から戻った血液を受け取る',inflow:'上大静脈・下大静脈',outflow:'三尖弁 → 右心室',hint:'向かって左側。体の右側の部屋です。'},
+ {id:'FJ2423',name:'右心室',position:[-.08,-.123,.362],color:'#377ea7',role:'肺動脈を通して肺へ送る',inflow:'右心房 → 三尖弁',outflow:'肺動脈弁 → 肺動脈 → 肺',hint:'心臓の前側に広がっています。'},
+ {id:'FJ2425',name:'左心房',position:[-.131,.182,-.424],color:'#bf4653',role:'肺静脈から血液を受け取る',inflow:'肺 → 肺静脈',outflow:'僧帽弁 → 左心室',hint:'心臓の後ろ側にあります。「周囲を透かす」や「後ろから」で位置を確かめよう。'},
+ {id:'FJ2422',name:'左心室',position:[.291,-.156,-.016],color:'#bf4653',role:'大動脈を通して全身へ送る',inflow:'左心房 → 僧帽弁',outflow:'大動脈弁 → 大動脈 → 全身',hint:'右心室より壁が厚く、全身へ血液を送る部屋です。模型の壁の厚みは補助表現です。'},
 ] as const;
 export const FLOW_STEPS=[
  {text:'全身 → 大静脈 → 右心房',detail:'全身で酸素を渡した血液が、大静脈から右心房へ戻ります。',chamber:0,color:'#267bb8'},
@@ -38,11 +39,13 @@ export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:str
  const lines=curves.map((curve,i)=>{const geometry=new T.BufferGeometry().setFromPoints(curve.getPoints(48));const material=new T.LineBasicMaterial({color:FLOW_STEPS[i].color,transparent:true,opacity:.3,depthTest:false});const line=new T.Line(geometry,material);line.renderOrder=10;group.add(line);return line;});
  // A biconcave disc suggests a red blood cell; its size and spacing are magnified.
  const bloodGeometry=new T.LatheGeometry([new T.Vector2(0,-.004),new T.Vector2(.009,-.005),new T.Vector2(.017,-.003),new T.Vector2(.020,0),new T.Vector2(.017,.003),new T.Vector2(.009,.005),new T.Vector2(0,.004)],10);
- const streams=curves.map((_,i)=>{const material=new T.MeshStandardMaterial({color:i<3||i===7?'#863b49':'#de4750',roughness:.48,depthTest:false});const mesh=new T.InstancedMesh(bloodGeometry,material,i===3||i===7?4:12);mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.frustumCulled=false;mesh.renderOrder=12;group.add(mesh);return mesh;});
+ const streams=curves.map((_,i)=>{const material=new T.MeshStandardMaterial({color:'#ffffff',roughness:.48,depthTest:false});const mesh=new T.InstancedMesh(bloodGeometry,material,i===3||i===7?4:12);mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.frustumCulled=false;mesh.renderOrder=12;group.add(mesh);return mesh;});
  const offsets=new Float32Array(8),dummy=new T.Object3D(),point=new T.Vector3(),tangent=new T.Vector3(),color=new T.Color(),up=new T.Vector3(0,1,0);
  const bead=new T.Mesh(new T.SphereGeometry(.036,12,8),new T.MeshBasicMaterial({color:'#267bb8',depthTest:false}));bead.renderOrder=13;group.add(bead);
  const layer=document.createElement('div');layer.className='heart-label-layer';host.appendChild(layer);
  const labels=[...CHAMBERS.map((c,i)=>{const el=document.createElement('button');el.textContent=c.name;el.className='heart-chamber-label';el.style.borderColor=c.color;el.setAttribute('aria-label',`${c.name}：${c.role}`);el.onclick=()=>onChamber(c.id);layer.appendChild(el);return {el,point:landmarks.chambers[i].clone()};}),...[{text:'肺でガス交換',point:lung},{text:'全身へ酸素を届ける',point:body}].map(item=>{const el=document.createElement('span');el.textContent=item.text;el.className='heart-route-label';layer.appendChild(el);return {el,point:item.point};})];
+ const leaderGeometry=new T.BufferGeometry();leaderGeometry.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(24),3));
+ const leaders=new T.LineSegments(leaderGeometry,new T.LineBasicMaterial({color:'#586f76',transparent:true,opacity:.65,depthTest:false}));leaders.frustumCulled=false;leaders.renderOrder=14;scene.add(leaders);
  const vesselNames=['大静脈','三尖弁','肺動脈弁・肺動脈','','肺静脈','僧帽弁','大動脈弁・大動脈',''];
  const vessel=document.createElement('span');vessel.className='heart-vessel-label';layer.appendChild(vessel);
  const mapped=[[-1,-1,-1,0,0],[0,1,1],[1,1,-1,-1,-1],[-1,-1,-1],[-1,-1,-1,2],[2,3,3],[3,3,-1,-1,-1,-1],[-1,-1,-1]];
@@ -50,24 +53,37 @@ export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:str
  const oxygenated=new T.Color('#de4750'),deoxygenated=new T.Color('#863b49');
  const projected=new T.Vector3(),sample=new T.Vector3();
  return {
-  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,beat:Beat,dt:number,bpm:number,showFlow:boolean,transform:(p:T.Vector3,chamber:number)=>T.Vector3){
-   group.visible=visible&&showFlow;layer.hidden=!visible;if(!visible)return;
+  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,beat:Beat,dt:number,bpm:number,showFlow:boolean,transform:(p:T.Vector3,chamber:number)=>T.Vector3,scope:'heart'|'all'='all',xray=true,selected=''){
+   group.visible=visible&&showFlow;leaders.visible=visible;layer.hidden=!visible;if(!visible)return;
    const width=host.clientWidth,height=host.clientHeight;
    // Follow the same deformation as the tissue, including each valve anchor.
-   curves.forEach((curve,i)=>{curve.points.forEach((p,j)=>p.copy(transform(originals[i][j],mapped[i][j])));const positions=lines[i].geometry.getAttribute('position');for(let j=0;j<=48;j++){curve.getPoint(j/48,sample);positions.setXYZ(j,sample.x,sample.y,sample.z);}positions.needsUpdate=true;});
-   labels.forEach(({el,point},i)=>{projected.copy(i<4?transform(point,i):point).project(camera);el.style.left=`${(projected.x*.5+.5)*width+([-55,-50,58,55][i]||0)}px`;el.style.top=`${(-projected.y*.5+.5)*height+([-28,30,-40,38][i]||0)}px`;el.hidden=projected.z>1||projected.z< -1;el.classList.toggle('active',coupled?(beat.stage===0?i===0||i===2:beat.stage===1||beat.stage===2?i===1||i===3:false):i===FLOW_STEPS[step].chamber);});
-   lines.forEach((line,i)=>{const gate=i===1||i===5?beat.avOpen:i===2||i===6?beat.outletOpen:true;line.material.opacity=coupled?(gate?.42:.08):i===step?.85:.12;});
-   bead.visible=!coupled;curves[step].getPoint(progress,bead.position);bead.material.color.set(FLOW_STEPS[step].color);
+   const placed:{x:number;y:number}[]=[],leaderPositions=leaderGeometry.getAttribute('position');
+   labels.forEach(({el,point},i)=>{
+    const anchor=i<4?sample.copy(transform(point,i)):sample.copy(point);projected.copy(anchor).project(camera);
+    const hidden=projected.z>1||projected.z< -1||(i>=4&&(!showFlow||scope==='heart'));
+    el.hidden=hidden;
+    let x=(projected.x*.5+.5)*width+(i<4?[-65,-58,70,65][i]:0),y=(-projected.y*.5+.5)*height+(i<4?[-30,35,-48,45][i]:0);
+    x=Math.max(58,Math.min(width-58,x));y=Math.max(24,Math.min(height-68,y));
+    if(i<4){for(let tries=0;tries<5&&placed.some(p=>Math.abs(p.x-x)<100&&Math.abs(p.y-y)<35);tries++)y=Math.max(24,Math.min(height-68,y+38));placed.push({x,y});}
+    el.style.left=`${x}px`;el.style.top=`${y}px`;
+    el.classList.toggle('selected',i<4&&CHAMBERS[i].id===selected);
+    el.classList.toggle('active',coupled?(beat.stage===0?i===0||i===2:beat.stage===1||beat.stage===2?i===1||i===3:false):i===FLOW_STEPS[step].chamber);
+    if(i<4){leaderPositions.setXYZ(i*2,anchor.x,anchor.y,anchor.z);projected.set(x/width*2-1,1-y/height*2,projected.z).unproject(camera);leaderPositions.setXYZ(i*2+1,hidden?anchor.x:projected.x,hidden?anchor.y:projected.y,hidden?anchor.z:projected.z);}
+   });leaderPositions.needsUpdate=true;
+   if(!showFlow){vessel.hidden=true;return;}
+   curves.forEach((curve,i)=>{curve.points.forEach((p,j)=>p.copy(transform(originals[i][j],mapped[i][j])));const window=heartFlowWindow(i,scope)??[0,0];const positions=lines[i].geometry.getAttribute('position');for(let j=0;j<=48;j++){curve.getPoint(window[0]+j/48*(window[1]-window[0]),sample);positions.setXYZ(j,sample.x,sample.y,sample.z);}positions.needsUpdate=true;});
+   lines.forEach((line,i)=>{line.visible=!!heartFlowWindow(i,scope);line.material.depthTest=!xray;const gate=i===1||i===5?beat.avOpen:i===2||i===6?beat.outletOpen:true;line.material.opacity=coupled?(gate?.42:.08):i===step?.85:.12;});
+   const beadWindow=heartFlowWindow(step,scope);bead.visible=!coupled&&!!beadWindow;bead.material.depthTest=!xray;curves[step].getPoint(beadWindow?beadWindow[0]+progress*(beadWindow[1]-beadWindow[0]):0,bead.position);bead.material.color.set(FLOW_STEPS[step].color);
    streams.forEach((mesh,i)=>{
     const gate=i===1||i===5?beat.avOpen:i===2||i===6?beat.outletOpen:true;
-    mesh.visible=coupled&&gate;if(running&&gate)offsets[i]=(offsets[i]+dt*bpm/60*(i===1||i===5?1.25:i===2||i===6?1.45:.4))%1;
+    const window=heartFlowWindow(i,scope);mesh.visible=coupled&&gate&&!!window;mesh.material.depthTest=!xray;if(running&&gate)offsets[i]=(offsets[i]+dt*bpm/60*(i===1||i===5?1.25:i===2||i===6?1.45:.4))%1;
     for(let j=0;j<mesh.count;j++){
-     const t=(offsets[i]+j/mesh.count)%1;curves[i].getPoint(t,point);curves[i].getTangent(t,tangent).normalize();dummy.position.copy(point);dummy.quaternion.setFromUnitVectors(up,tangent);dummy.rotateY(j*.8+offsets[i]*3);dummy.scale.setScalar(1);dummy.updateMatrix();mesh.setMatrixAt(j,dummy.matrix);
+     const t=(offsets[i]+j/mesh.count)%1,routeT=window?window[0]+t*(window[1]-window[0]):0;curves[i].getPoint(routeT,point);curves[i].getTangent(routeT,tangent).normalize();dummy.position.copy(point);dummy.quaternion.setFromUnitVectors(up,tangent);dummy.rotateY(j*.8+offsets[i]*3);dummy.scale.setScalar(1);dummy.updateMatrix();mesh.setMatrixAt(j,dummy.matrix);
      color.set(i<3||i===7?'#863b49':'#de4750');if(i===3||i===7)color.lerp(i===3?oxygenated:deoxygenated,t);mesh.setColorAt(j,color);
     }mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
    });
-   vessel.textContent=vesselNames[step];vessel.hidden=coupled||!showFlow||!vesselNames[step];curves[step].getPoint(.5,projected).project(camera);vessel.style.left=`${(projected.x*.5+.5)*width}px`;vessel.style.top=`${(-projected.y*.5+.5)*height-18}px`;
+   vessel.textContent=vesselNames[step];vessel.hidden=coupled||!showFlow||!vesselNames[step]||!heartFlowWindow(step,scope);curves[step].getPoint(.5,projected).project(camera);vessel.style.left=`${(projected.x*.5+.5)*width}px`;vessel.style.top=`${(-projected.y*.5+.5)*height-18}px`;
   },
-  dispose(){scene.remove(group);group.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>m.dispose());if(o instanceof T.InstancedMesh)o.dispose();}});layer.remove();}
+  dispose(){scene.remove(group,leaders);leaderGeometry.dispose();leaders.material.dispose();group.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>m.dispose());if(o instanceof T.InstancedMesh)o.dispose();}});layer.remove();}
  };
 }
