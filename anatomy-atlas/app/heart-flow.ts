@@ -1,64 +1,73 @@
 import * as T from 'three';
+import type {heartCycle} from './heart-cycle';
 
-// The original cavity meshes are opened out for teaching; these are not vessel geometries.
 export const CHAMBERS=[
- // Chamber centers in the model's native coordinates, normalized around heart origin.
- {id:'FJ2424',name:'右心房',position:[-.641,.079,-.007],color:'#b66b64',role:'全身から戻った血液を受け取る'},
- {id:'FJ2423',name:'右心室',position:[-.08,-.123,.362],color:'#b66b64',role:'肺動脈を通して肺へ送る'},
- {id:'FJ2425',name:'左心房',position:[-.131,.182,-.424],color:'#b66b64',role:'肺静脈から血液を受け取る'},
- {id:'FJ2422',name:'左心室',position:[.291,-.156,-.016],color:'#b66b64',role:'大動脈を通して全身へ送る'},
+ {id:'FJ2424',name:'右心房',position:[-.641,.079,-.007],color:'#377ea7',role:'全身から戻った血液を受け取る'},
+ {id:'FJ2423',name:'右心室',position:[-.08,-.123,.362],color:'#377ea7',role:'肺動脈を通して肺へ送る'},
+ {id:'FJ2425',name:'左心房',position:[-.131,.182,-.424],color:'#bf4653',role:'肺静脈から血液を受け取る'},
+ {id:'FJ2422',name:'左心室',position:[.291,-.156,-.016],color:'#bf4653',role:'大動脈を通して全身へ送る'},
 ] as const;
 export const FLOW_STEPS=[
  {text:'全身 → 大静脈 → 右心房',detail:'全身で酸素を渡した血液が、大静脈から右心房へ戻ります。',chamber:0,color:'#267bb8'},
- {text:'右心房 → 三尖弁 → 右心室',detail:'右心房から右心室へ。三尖弁が逆流を防ぎます。',chamber:1,color:'#267bb8'},
+ {text:'右心房 → 三尖弁 → 右心室',detail:'房室弁が開いている間に、右心房から右心室へ血液が入ります。',chamber:1,color:'#267bb8'},
  {text:'右心室 → 肺動脈 → 肺',detail:'右心室が縮み、肺動脈弁を通して肺へ送ります。肺動脈には酸素の少ない血液が流れます。',chamber:1,color:'#267bb8'},
  {text:'肺で酸素を受け取る',detail:'肺胞と血液の間で気体を交換し、酸素を受け取り二酸化炭素を渡します。',chamber:-1,color:'#ab5b90'},
  {text:'肺 → 肺静脈 → 左心房',detail:'酸素の多い血液が、肺静脈を通って左心房へ戻ります。',chamber:2,color:'#c34052'},
- {text:'左心房 → 僧帽弁 → 左心室',detail:'左心房から左心室へ。僧帽弁が逆流を防ぎます。',chamber:3,color:'#c34052'},
+ {text:'左心房 → 僧帽弁 → 左心室',detail:'房室弁が開いている間に、左心房から左心室へ血液が入ります。',chamber:3,color:'#c34052'},
  {text:'左心室 → 大動脈 → 全身',detail:'左心室が縮み、大動脈弁を通して全身へ送ります。',chamber:3,color:'#c34052'},
  {text:'全身で酸素を渡す',detail:'毛細血管で組織へ酸素を渡した血液は、再び静脈を通って心臓へ戻ります。',chamber:-1,color:'#ab5b90'},
 ];
-
-export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:string)=>void){
+export type HeartLandmarks={chambers:T.Vector3[];tricuspid:T.Vector3;mitral:T.Vector3;pulmonaryValve:T.Vector3;aorticValve:T.Vector3;pulmonaryTrunk:T.Vector3;aorta:T.Vector3;venaCava:T.Vector3;pulmonaryVein:T.Vector3};
+type Beat=ReturnType<typeof heartCycle>;
+export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:string)=>void,landmarks:HeartLandmarks){
  const group=new T.Group();scene.add(group);
- const a=new T.Vector3(...CHAMBERS[0].position),v=new T.Vector3(...CHAMBERS[1].position),b=new T.Vector3(...CHAMBERS[2].position),w=new T.Vector3(...CHAMBERS[3].position);
- const lung=new T.Vector3(0,1.3,0),body=new T.Vector3(0,-1.35,0);
+ const [a,v,b,w]=landmarks.chambers;
+ const lung=new T.Vector3(0,1.6,-.1),body=new T.Vector3(0,-1.55,-.1);
+ // Valve and proximal vessel waypoints come from the actual atlas parts.
+ // The routes beyond these ports are explanatory paths, not vessel meshes.
  const curves=[
-  new T.CatmullRomCurve3([body,new T.Vector3(-1.22,-1.1,0),new T.Vector3(-1.22,.45,0),a]),
-  new T.CatmullRomCurve3([a,new T.Vector3(-.62,0,.55),v]),
-  new T.CatmullRomCurve3([v,new T.Vector3(-1.02,-.05,-.35),new T.Vector3(-1.03,1.1,0),lung]),
-  new T.CatmullRomCurve3([lung.clone().add(new T.Vector3(-.15,0,0)),lung.clone().add(new T.Vector3(0,.06,0)),lung.clone().add(new T.Vector3(.15,0,0))]),
-  new T.CatmullRomCurve3([lung,new T.Vector3(.45,1.2,0),b]),
-  new T.CatmullRomCurve3([b,new T.Vector3(.62,0,.55),w]),
-  new T.CatmullRomCurve3([w,new T.Vector3(1.25,.1,0),new T.Vector3(1.3,-1.1,0),body]),
-  new T.CatmullRomCurve3([body.clone().add(new T.Vector3(.15,0,0)),body.clone().add(new T.Vector3(0,-.06,0)),body.clone().add(new T.Vector3(-.15,0,0))]),
+  new T.CatmullRomCurve3([body,new T.Vector3(-1.35,-.9,.1),new T.Vector3(-1.3,1.1,.1),landmarks.venaCava.clone(),a.clone()]),
+  new T.CatmullRomCurve3([a.clone(),landmarks.tricuspid.clone(),v.clone()]),
+  new T.CatmullRomCurve3([v.clone(),landmarks.pulmonaryValve.clone(),landmarks.pulmonaryTrunk.clone(),new T.Vector3(-.6,1.45,0),lung.clone()]),
+  new T.CatmullRomCurve3([lung.clone().add(new T.Vector3(-.18,0,0)),lung.clone().add(new T.Vector3(0,.06,0)),lung.clone().add(new T.Vector3(.18,0,0))]),
+  new T.CatmullRomCurve3([lung.clone(),new T.Vector3(.9,1.2,-.5),landmarks.pulmonaryVein.clone(),b.clone()]),
+  new T.CatmullRomCurve3([b.clone(),landmarks.mitral.clone(),w.clone()]),
+  new T.CatmullRomCurve3([w.clone(),landmarks.aorticValve.clone(),landmarks.aorta.clone(),new T.Vector3(1.35,1.1,.1),new T.Vector3(1.4,-1,.1),body.clone()]),
+  new T.CatmullRomCurve3([body.clone().add(new T.Vector3(.18,0,0)),body.clone().add(new T.Vector3(0,-.06,0)),body.clone().add(new T.Vector3(-.18,0,0))]),
  ];
- const tubes=curves.map((curve,i)=>{const m=new T.MeshBasicMaterial({color:FLOW_STEPS[i].color,transparent:true,opacity:.22,depthTest:false});const mesh=new T.Mesh(new T.TubeGeometry(curve,40,.013,6,false),m);mesh.renderOrder=15;group.add(mesh);return mesh;});
- const arrows=curves.map((curve,i)=>{const arrow=new T.ArrowHelper(curve.getTangent(.6).normalize(),curve.getPoint(.6),.14,FLOW_STEPS[i].color,.09,.06);for(const object of [arrow.line,arrow.cone]){const material=object.material as T.Material;material.depthTest=false;object.renderOrder=16;}group.add(arrow);return arrow;});
- const bead=new T.Mesh(new T.SphereGeometry(.055,16,12),new T.MeshBasicMaterial({color:'#267bb8',depthTest:false}));bead.renderOrder=20;group.add(bead);
- // Multiple particles make simultaneous circulation visible. AV and outlet routes
- // move in their respective simplified cardiac phases; venous return continues.
- const offsets=new Float32Array(8);
- const streams=curves.map((_,i)=>Array.from({length:i===3||i===7?2:5},()=>{const mesh=new T.Mesh(new T.SphereGeometry(.028,10,8),new T.MeshBasicMaterial({color:FLOW_STEPS[i].color,depthTest:false}));mesh.renderOrder=19;group.add(mesh);return mesh;}));
+ const lines=curves.map((curve,i)=>{const geometry=new T.BufferGeometry().setFromPoints(curve.getPoints(48));const material=new T.LineBasicMaterial({color:FLOW_STEPS[i].color,transparent:true,opacity:.3,depthTest:false});const line=new T.Line(geometry,material);line.renderOrder=10;group.add(line);return line;});
+ // A biconcave disc suggests a red blood cell; its size and spacing are magnified.
+ const bloodGeometry=new T.LatheGeometry([new T.Vector2(0,-.004),new T.Vector2(.009,-.005),new T.Vector2(.017,-.003),new T.Vector2(.020,0),new T.Vector2(.017,.003),new T.Vector2(.009,.005),new T.Vector2(0,.004)],10);
+ const streams=curves.map((_,i)=>{const material=new T.MeshStandardMaterial({color:i<3||i===7?'#863b49':'#de4750',roughness:.48,depthTest:false});const mesh=new T.InstancedMesh(bloodGeometry,material,i===3||i===7?4:12);mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.frustumCulled=false;mesh.renderOrder=12;group.add(mesh);return mesh;});
+ const offsets=new Float32Array(8),dummy=new T.Object3D(),point=new T.Vector3(),tangent=new T.Vector3(),color=new T.Color(),up=new T.Vector3(0,1,0);
+ const bead=new T.Mesh(new T.SphereGeometry(.036,12,8),new T.MeshBasicMaterial({color:'#267bb8',depthTest:false}));bead.renderOrder=13;group.add(bead);
  const layer=document.createElement('div');layer.className='heart-label-layer';host.appendChild(layer);
+ const labels=[...CHAMBERS.map((c,i)=>{const el=document.createElement('button');el.textContent=c.name;el.className='heart-chamber-label';el.style.borderColor=c.color;el.setAttribute('aria-label',`${c.name}：${c.role}`);el.onclick=()=>onChamber(c.id);layer.appendChild(el);return {el,point:landmarks.chambers[i].clone()};}),...[{text:'肺でガス交換',point:lung},{text:'全身へ酸素を届ける',point:body}].map(item=>{const el=document.createElement('span');el.textContent=item.text;el.className='heart-route-label';layer.appendChild(el);return {el,point:item.point};})];
+ const vesselNames=['大静脈','三尖弁','肺動脈弁・肺動脈','','肺静脈','僧帽弁','大動脈弁・大動脈',''];
  const vessel=document.createElement('span');vessel.className='heart-vessel-label';layer.appendChild(vessel);
- const labels=[...CHAMBERS.map(c=>{const el=document.createElement('button');el.textContent=c.name;el.className='heart-chamber-label';el.style.borderColor=c.color;el.setAttribute('aria-label',`${c.name}：${c.role}`);el.onclick=()=>onChamber(c.id);layer.appendChild(el);return {el,point:new T.Vector3(...c.position)};}),...[{text:'肺：酸素を受け取る',point:lung},{text:'全身：酸素を渡す',point:body}].map(item=>{const el=document.createElement('span');el.textContent=item.text;el.className='heart-route-label';layer.appendChild(el);return {el,point:item.point};})];
- const projected=new T.Vector3();
+ const mapped=[[-1,-1,-1,0,0],[0,1,1],[1,1,-1,-1,-1],[-1,-1,-1],[-1,-1,-1,2],[2,3,3],[3,3,-1,-1,-1,-1],[-1,-1,-1]];
+ const originals=[[body,new T.Vector3(-1.35,-.9,.1),new T.Vector3(-1.3,1.1,.1),landmarks.venaCava,a],[a,landmarks.tricuspid,v],[v,landmarks.pulmonaryValve,landmarks.pulmonaryTrunk,new T.Vector3(-.6,1.45,0),lung],[lung.clone().add(new T.Vector3(-.18,0,0)),lung.clone().add(new T.Vector3(0,.06,0)),lung.clone().add(new T.Vector3(.18,0,0))],[lung,new T.Vector3(.9,1.2,-.5),landmarks.pulmonaryVein,b],[b,landmarks.mitral,w],[w,landmarks.aorticValve,landmarks.aorta,new T.Vector3(1.35,1.1,.1),new T.Vector3(1.4,-1,.1),body],[body.clone().add(new T.Vector3(.18,0,0)),body.clone().add(new T.Vector3(0,-.06,0)),body.clone().add(new T.Vector3(-.18,0,0))]];
+ const oxygenated=new T.Color('#de4750'),deoxygenated=new T.Color('#863b49');
+ const projected=new T.Vector3(),sample=new T.Vector3();
  return {
-  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,stage:number,dt:number,bpm:number){group.visible=visible;layer.hidden=!visible;if(!visible)return;const width=host.clientWidth,height=host.clientHeight;
-   const chamberLabelX=[-24,-42,34,42],chamberLabelY=[-30,15,-25,25];
-   labels.forEach(({el,point},i)=>{projected.copy(point).project(camera);el.style.left=`${(projected.x*.5+.5)*width+(i<4?chamberLabelX[i]:0)}px`;el.style.top=`${(-projected.y*.5+.5)*height+(i<4?chamberLabelY[i]:i===5?-18:0)}px`;el.hidden=projected.z>1||projected.z< -1;el.classList.toggle('active',i===FLOW_STEPS[step].chamber);});
-   tubes.forEach((t,i)=>{t.material.opacity=i===step?.95:.16;});arrows.forEach((a,i)=>{a.visible=i===step;});bead.position.copy(curves[step].getPoint(progress));bead.material.color.set(FLOW_STEPS[step].color);
-   bead.visible=!coupled;
-   streams.forEach((particles,i)=>{
-    const active=i===1||i===5?stage!==1:i===2||i===6?stage===1:true;
-    if(coupled&&running&&active)offsets[i]=(offsets[i]+dt*bpm/60*(i===1||i===5?1.1:.48))%1;
-    particles.forEach((particle,j)=>{particle.visible=coupled;particle.position.copy(curves[i].getPoint((offsets[i]+j/particles.length)%1));particle.scale.setScalar(active?1:.65);if(i===3||i===7){const t=(offsets[i]+j/particles.length)%1;particle.material.color.set(i===3?'#267bb8':'#c34052').lerp(new T.Color(i===3?'#c34052':'#267bb8'),t);}});
-    if(coupled){tubes[i].material.opacity=active?.65:.18;arrows[i].visible=active;}
+  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,beat:Beat,dt:number,bpm:number,showFlow:boolean,transform:(p:T.Vector3,chamber:number)=>T.Vector3){
+   group.visible=visible&&showFlow;layer.hidden=!visible;if(!visible)return;
+   const width=host.clientWidth,height=host.clientHeight;
+   // Follow the same deformation as the tissue, including each valve anchor.
+   curves.forEach((curve,i)=>{curve.points.forEach((p,j)=>p.copy(transform(originals[i][j],mapped[i][j])));const positions=lines[i].geometry.getAttribute('position');for(let j=0;j<=48;j++){curve.getPoint(j/48,sample);positions.setXYZ(j,sample.x,sample.y,sample.z);}positions.needsUpdate=true;});
+   labels.forEach(({el,point},i)=>{projected.copy(i<4?transform(point,i):point).project(camera);el.style.left=`${(projected.x*.5+.5)*width+([-55,-50,58,55][i]||0)}px`;el.style.top=`${(-projected.y*.5+.5)*height+([-28,30,-40,38][i]||0)}px`;el.hidden=projected.z>1||projected.z< -1;el.classList.toggle('active',coupled?(beat.stage===0?i===0||i===2:beat.stage===1||beat.stage===2?i===1||i===3:false):i===FLOW_STEPS[step].chamber);});
+   lines.forEach((line,i)=>{const gate=i===1||i===5?beat.avOpen:i===2||i===6?beat.outletOpen:true;line.material.opacity=coupled?(gate?.42:.08):i===step?.85:.12;});
+   bead.visible=!coupled;curves[step].getPoint(progress,bead.position);bead.material.color.set(FLOW_STEPS[step].color);
+   streams.forEach((mesh,i)=>{
+    const gate=i===1||i===5?beat.avOpen:i===2||i===6?beat.outletOpen:true;
+    mesh.visible=coupled&&gate;if(running&&gate)offsets[i]=(offsets[i]+dt*bpm/60*(i===1||i===5?1.25:i===2||i===6?1.45:.4))%1;
+    for(let j=0;j<mesh.count;j++){
+     const t=(offsets[i]+j/mesh.count)%1;curves[i].getPoint(t,point);curves[i].getTangent(t,tangent).normalize();dummy.position.copy(point);dummy.quaternion.setFromUnitVectors(up,tangent);dummy.rotateY(j*.8+offsets[i]*3);dummy.scale.setScalar(1);dummy.updateMatrix();mesh.setMatrixAt(j,dummy.matrix);
+     color.set(i<3||i===7?'#863b49':'#de4750');if(i===3||i===7)color.lerp(i===3?oxygenated:deoxygenated,t);mesh.setColorAt(j,color);
+    }mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
    });
-   if(coupled)labels.slice(0,4).forEach(({el},i)=>el.classList.toggle('active',stage===1?i===1||i===3:i===0||i===2));
-   const names=['大静脈','三尖弁','肺動脈','','肺静脈','僧帽弁','大動脈',''];vessel.textContent=names[step];vessel.hidden=coupled||!names[step];projected.copy(curves[step].getPoint(.5)).project(camera);vessel.style.left=`${(projected.x*.5+.5)*width}px`;vessel.style.top=`${(-projected.y*.5+.5)*height-18}px`;vessel.style.color=FLOW_STEPS[step].color;
+   vessel.textContent=vesselNames[step];vessel.hidden=coupled||!showFlow||!vesselNames[step];curves[step].getPoint(.5,projected).project(camera);vessel.style.left=`${(projected.x*.5+.5)*width}px`;vessel.style.top=`${(-projected.y*.5+.5)*height-18}px`;
   },
-  dispose(){scene.remove(group);group.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>m.dispose());}});layer.remove();}
+  dispose(){scene.remove(group);group.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>m.dispose());if(o instanceof T.InstancedMesh)o.dispose();}});layer.remove();}
  };
 }

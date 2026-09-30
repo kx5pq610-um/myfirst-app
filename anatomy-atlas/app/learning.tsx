@@ -70,7 +70,7 @@ export default function LearningPanel({open,lessonId,onClose,onLessonChange,onFo
     <button className="lab-expand" aria-pressed={expanded} onClick={()=>setExpanded(!expanded)}>{expanded?'3Dモデルと並べる':'学習図を大きく表示'}</button>
     <div className="lesson-heading"><div><span className="lesson-kicker">{lesson.id==='blood'?'血液を模式図で確認':'3Dモデル＋学習図'}</span><h3>{lesson.title}</h3><p>{lesson.subtitle}</p></div><span className="lesson-index">{LESSONS.findIndex(item=>item.id===lesson.id)+1} / {LESSONS.length}</span></div>
     {lesson.id!=='heart'&&lesson.id!=='eye'&&<Button className="lesson-focus" onClick={()=>onFocus(lesson)}><MousePointer2 size={16}/> 3Dで{lesson.title}を見る<ChevronRight size={16}/></Button>}
-    {(lesson.id==='heart'||lesson.id==='eye')&&<button className="model-launch" onClick={()=>onModel(lesson.id as 'heart'|'eye')}>{lesson.id==='heart'?'▶ 拍動する3D心臓を手で動かす':'目の3D模型を手で分解する'}<small>{lesson.id==='heart'?'心音・回転・半分ひらく・部品を取り出す':'水晶体・虹彩・網膜を取り出して観察'}</small></button>}
+    {(lesson.id==='heart'||lesson.id==='eye')&&<button className="model-launch" onClick={()=>onModel(lesson.id as 'heart'|'eye')}>{lesson.id==='heart'?'▶ 拍動する3D心臓を手で動かす':'目の3D模型を手で分解する'}<small>{lesson.id==='heart'?'前側を開く・拍動と血流・弁の動き':'水晶体・虹彩・網膜を取り出して観察'}</small></button>}
     <Visual id={lesson.id}/>
     <section className="lesson-text-section"><h4><span className="curriculum-chip middle">中学校理科</span>まず押さえる</h4><ul>{lesson.middle.map(item=><li key={item}>{item}</li>)}</ul></section>
     <section className="lesson-text-section high-section"><h4><span className="curriculum-chip high">高校生物への橋わたし</span>さらに深める</h4><ul>{lesson.high.map(item=><li key={item}>{item}</li>)}</ul></section>
