@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>三国志 英傑戦記 MVP v20</title>
+<meta http-equiv="refresh" content="0; url=game.html">
+<title>三国志 英傑戦記</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/battle-effects.css">
+<style>.latestGameLink{display:block;padding:12px;border:1px solid #d9af5d;border-radius:9px;background:linear-gradient(#976422,#5c3914);color:#fff4cc;font-weight:800;text-decoration:none;box-shadow:0 3px 10px #0008}.latestGameLink:hover,.latestGameLink:focus-visible{filter:brightness(1.16)}</style>
 </head>
 <body>
 <div id="fxText"></div>
 <div id="chapterCurtain" style="position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#0c0907eF;color:#f4d27d;font-family:serif;font-size:clamp(28px,7vw,60px);font-weight:900;text-align:center;padding:24px;"></div>
 <div id="cutIn" class="cutIn"><div id="cutPortrait" class="cutPortrait">劉</div><div class="cutText"><b id="cutName">劉備</b><span id="cutLine">仁徳の号令！</span></div></div>
-<div id="titleScreen"><div class="titleBox"><div class="titleLogo">三国志 英傑戦記</div><div class="titleSub">乱世に起つ、義勇の物語</div><div class="titleButtons"><button id="newGameBtn" class="primary">新しく始める</button><button id="continueBtn">つづきから</button><button id="slotLoadBtn">セーブスロット</button><button id="postgameBtn" class="galleryBtn">クリア後メニュー</button></div><p class="small" style="margin-top:18px">MVP v20 ― 英傑の物語 / 武将・宝物・必殺技・戦闘演出</p></div></div>
+<div id="titleScreen"><div class="titleBox"><div class="titleLogo">三国志 英傑戦記</div><div class="titleSub">乱世に起つ、義勇の物語</div><div class="titleButtons"><a class="latestGameLink" href="game.html">▶ 最新プレイ版を遊ぶ（全3章）</a><button id="newGameBtn" class="primary">本編開発版を始める</button><button id="continueBtn">開発版のつづきから</button><button id="slotLoadBtn">セーブスロット</button><button id="postgameBtn" class="galleryBtn">クリア後メニュー</button></div><p class="small" style="margin-top:18px">本編開発版 MVP v20 ― 英傑の物語 / 武将・宝物・必殺技・戦闘演出</p></div></div>
 <div class="audioCtl"><button id="audioBtn">🔊 音ON</button></div>
 <div id="app"><header><div><h1>三国志 英傑戦記</h1><div id="stageTitle">第一章　義勇軍、起つ</div></div><div class="topStats"><div id="money" class="money">軍資金 300</div><div style="text-align:right"><div id="turnBadge" class="turnBadge">自軍ターン</div><div id="turnNo" class="small">TURN 1</div></div></div></header><div class="main"><div class="boardWrap"><div id="board"></div></div><div class="side"><div class="panel"><h2>武将情報</h2><div id="unitInfo" class="small">味方武将を選択してください。</div></div><div class="panel"><h2>行動</h2><div class="btnrow"><button id="attackBtn" disabled>攻撃</button><button id="strategyBtn" class="magic" disabled>策略</button><button id="itemBtn" disabled>道具</button><button id="specialBtn" disabled>調べる</button><button id="talkBtn" class="talkBtn" disabled>会話</button><button id="waitBtn" disabled>待機</button><button id="endTurnBtn" class="primary">ターン終了</button><button id="saveBtn">手動セーブ</button><button id="restartBtn" class="danger">最初から</button></div><div class="small" style="margin-top:8px">青＝移動　赤＝攻撃　紫＝策略</div><div id="objectiveBox" class="objectiveBox">勝利条件：敵軍を全滅</div><div class="envBar"><span id="weatherChip" class="envChip">天候：晴</span><span id="timeChip" class="envChip">時刻：昼</span><span id="moraleChip" class="envChip">士気：100</span><span id="storyFlagChip" class="storyFlag">歴史分岐：未確定</span><span id="zhangFlagChip" class="destinyChip">張飛：生存</span><span id="liuFlagChip" class="destinyChip">劉備：生存</span></div></div><div class="panel"><h2>戦況</h2><div id="log"></div></div></div></div></div>
 <div id="story" class="overlay"><div class="modal"><h2 id="storyTitle"></h2><div id="storyBody"></div><button id="storyBtn" class="primary" style="width:100%;margin-top:8px">出陣する</button></div></div>
