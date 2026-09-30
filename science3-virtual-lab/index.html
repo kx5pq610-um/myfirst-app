@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>中学3年理科 バーチャル実験室</title>
+  <meta name="description" content="欠席時や家庭学習でも、Chromebookのブラウザ上で中学3年理科の実験・観察を操作できるシミュレーションサイトです。" />
+  <style>
+:root{
+  --bg:#07111f;--panel:#0d1b2d;--panel2:#10243a;--text:#eef7ff;--muted:#9fb4c9;
+  --line:rgba(255,255,255,.12);--accent:#62e6c7;--accent2:#72a7ff;--warn:#ffd36e;--danger:#ff7c8f;
+  --shadow:0 20px 60px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:linear-gradient(180deg,#06101c,#091727 55%,#07111f);color:var(--text);min-height:100vh}
+button,input,select{font:inherit}.hero{min-height:78vh;display:grid;place-items:center;padding:64px 24px;background:radial-gradient(circle at 70% 20%,rgba(98,230,199,.17),transparent 28%),radial-gradient(circle at 25% 10%,rgba(114,167,255,.16),transparent 25%)}
+.hero-inner{width:min(1100px,100%)}.eyebrow,.kicker{font-size:.78rem;font-weight:800;letter-spacing:.16em;color:var(--accent)}
+h1{font-size:clamp(3rem,8vw,7rem);line-height:.9;margin:.18em 0 .3em;letter-spacing:-.055em}h1 span{color:transparent;-webkit-text-stroke:1.5px rgba(238,247,255,.75)}
+.hero p{font-size:clamp(1rem,2vw,1.3rem);line-height:1.9;color:var(--muted);max-width:700px}.primary,.ghost{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;padding:13px 20px;font-weight:800;text-decoration:none;cursor:pointer}.primary{background:var(--accent);color:#05231d;margin-top:18px}.ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line)}
+main{width:min(1180px,calc(100% - 32px));margin:auto}.section{padding:72px 0}.intro{display:grid;grid-template-columns:1fr 1fr;gap:40px;border-bottom:1px solid var(--line)}h2{font-size:clamp(2rem,4vw,3.5rem);margin:.15em 0 .25em;letter-spacing:-.035em}.intro>p,.lab-desc{color:var(--muted);line-height:1.9}
+.lab-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:32px}.lab-card{background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:24px;padding:22px;min-height:230px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;justify-content:space-between}.lab-card:hover{transform:translateY(-4px);border-color:rgba(98,230,199,.5);box-shadow:var(--shadow)}.lab-card .num{font-size:.75rem;color:var(--muted);font-weight:800}.lab-card .icon{font-size:2.2rem}.lab-card h3{margin:12px 0 7px;font-size:1.25rem}.lab-card p{margin:0;color:var(--muted);line-height:1.6;font-size:.92rem}.lab-card .tag{margin-top:16px;font-size:.74rem;color:var(--accent);font-weight:800}
+.lab-area{padding:40px 0 90px}.hidden{display:none}.lab-head{display:flex;justify-content:space-between;align-items:end;gap:30px;margin-bottom:22px}.status-badge{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:999px;padding:9px 14px;font-size:.84rem;color:var(--muted)}.status-badge.running{color:#071a17;background:var(--accent);border-color:transparent;font-weight:800}
+.sim-shell{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px}.stage,.controls{background:linear-gradient(180deg,#0b1b2c,#081522);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}.stage{min-height:590px;position:relative;overflow:hidden}.controls{padding:20px;align-self:start;position:sticky;top:18px}.control-group{padding:0 0 18px;margin-bottom:18px;border-bottom:1px solid var(--line)}.control-group:last-child{border:0;margin:0;padding:0}.control-label{display:flex;justify-content:space-between;gap:12px;font-size:.86rem;font-weight:800;margin-bottom:10px}.control-label span:last-child{color:var(--accent)}input[type=range]{width:100%;accent-color:var(--accent)}select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:#091827;color:var(--text)}.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:0;border-radius:14px;padding:12px 10px;font-weight:850;cursor:pointer;background:var(--accent);color:#06231d}.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--line)}.readout{display:grid;grid-template-columns:1fr 1fr;gap:9px}.meter{padding:12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.meter b{display:block;font-size:1.25rem;margin-top:3px}.meter span{color:var(--muted);font-size:.74rem}
+.canvas{width:100%;height:100%;display:block;min-height:590px}.note{font-size:.78rem;line-height:1.6;color:var(--muted)}
+.lab-scene{position:absolute;inset:0;padding:28px}.bench{position:absolute;left:7%;right:7%;bottom:10%;height:18px;background:#805c3d;border-radius:6px;box-shadow:0 7px 0 #4d3624}.glass{position:absolute;border:3px solid rgba(190,226,255,.5);background:rgba(102,179,255,.08);backdrop-filter:blur(2px)}
+footer{border-top:1px solid var(--line);padding:30px max(24px,calc((100vw - 1180px)/2));display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:.82rem}footer strong{color:var(--text)}
+@media(max-width:980px){.lab-grid{grid-template-columns:repeat(2,1fr)}.sim-shell{grid-template-columns:1fr}.controls{position:static}.stage,.canvas{min-height:520px}}
+@media(max-width:620px){main{width:min(100% - 20px,1180px)}.hero{min-height:68vh;padding:38px 18px}.intro{grid-template-columns:1fr}.lab-grid{grid-template-columns:1fr}.stage,.canvas{min-height:460px}.lab-head{align-items:start;flex-direction:column}.sim-shell{gap:10px}.controls,.stage{border-radius:20px}.readout{grid-template-columns:1fr 1fr}footer{flex-direction:column}}
+
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">SCIENCE 3 · VIRTUAL LAB</div>
+      <h1>中学3年理科<br><span>バーチャル実験室</span></h1>
+      <p>実験器具を動かす。条件を変える。現象を見る。<br>説明を読むより、まず触って確かめるためのシミュレーションです。</p>
+      <a class="primary" href="#labs">実験を選ぶ</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="section intro">
+      <div>
+        <p class="kicker">HOW TO USE</p>
+        <h2>ブラウザだけで実験</h2>
+      </div>
+      <p>インストール不要。Chromebook・PC・タブレットで動きます。各実験は「開始」「停止」「リセット」と少数の操作だけに絞っています。</p>
+    </section>
+
+    <section id="labs" class="section">
+      <p class="kicker">VIRTUAL LABS</p>
+      <h2>実験一覧</h2>
+      <div id="labGrid" class="lab-grid"></div>
+    </section>
+
+    <section id="labArea" class="lab-area hidden" aria-live="polite">
+      <div class="lab-head">
+        <div>
+          <button id="backBtn" class="ghost">← 実験一覧へ</button>
+          <p id="labUnit" class="kicker"></p>
+          <h2 id="labTitle"></h2>
+          <p id="labDesc" class="lab-desc"></p>
+        </div>
+        <div id="statusBadge" class="status-badge">停止中</div>
+      </div>
+
+      <div class="sim-shell">
+        <div id="stage" class="stage"></div>
+        <aside id="controls" class="controls"></aside>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <strong>中学3年理科 バーチャル実験室</strong>
+    <span>実物実験を行えないときの代替操作環境として利用できます。</span>
+  </footer>
+
+  <script>
+const labs=[
+ {id:'motion',icon:'🛒',unit:'運動とエネルギー',title:'斜面を下る台車',desc:'斜面の角度を変え、台車の速さの変化と記録タイマーの打点を再現します。'},
+ {id:'work',icon:'⚙️',unit:'運動とエネルギー',title:'仕事と滑車',desc:'定滑車・動滑車を切り替え、おもりを実際に引き上げます。'},
+ {id:'conductivity',icon:'💡',unit:'化学変化とイオン',title:'水溶液と電流',desc:'電極を水溶液に入れ、電流が流れるかを豆電球で確かめます。'},
+ {id:'electrolysis',icon:'⚡',unit:'化学変化とイオン',title:'塩化銅水溶液の電気分解',desc:'電源を入れると電極付近の変化と水溶液の色の変化が進みます。'},
+ {id:'neutralization',icon:'🧪',unit:'化学変化とイオン',title:'酸とアルカリの中和',desc:'水酸化ナトリウム水溶液へ塩酸を少しずつ加え、色とpHの変化を観察します。'},
+ {id:'daniel',icon:'🔋',unit:'化学変化とイオン',title:'ダニエル電池',desc:'回路をつなぎ、電子の流れ、亜鉛板・銅板の変化を見ます。'},
+ {id:'cell',icon:'🔬',unit:'生命の連続性',title:'根の先端と細胞分裂',desc:'顕微鏡の倍率・ピント・観察位置を変えて、分裂中の細胞を探します。'},
+ {id:'sky',icon:'🌞',unit:'地球と宇宙',title:'透明半球と太陽の動き',desc:'時刻と季節を動かし、透明半球上の太陽の位置を再現します。'}
+];
+
+const grid=document.querySelector('#labGrid'),area=document.querySelector('#labArea'),stage=document.querySelector('#stage'),controls=document.querySelector('#controls');
+const titleEl=document.querySelector('#labTitle'),unitEl=document.querySelector('#labUnit'),descEl=document.querySelector('#labDesc'),badge=document.querySelector('#statusBadge');
+let cleanup=()=>{};
+
+labs.forEach((l,i)=>{const c=document.createElement('article');c.className='lab-card';c.innerHTML=`<div><div class="num">LAB ${String(i+1).padStart(2,'0')}</div><div class="icon">${l.icon}</div><h3>${l.title}</h3><p>${l.desc}</p></div><div class="tag">${l.unit}</div>`;c.onclick=()=>openLab(l);grid.appendChild(c)});
+document.querySelector('#backBtn').onclick=()=>{cleanup();area.classList.add('hidden');document.querySelector('#labs').scrollIntoView({behavior:'smooth'});history.replaceState(null,'',location.pathname)};
+function setRunning(v,text){badge.textContent=text||(v?'実験中':'停止中');badge.classList.toggle('running',v)}
+function openLab(l){cleanup();titleEl.textContent=l.title;unitEl.textContent=l.unit;descEl.textContent=l.desc;area.classList.remove('hidden');setRunning(false);stage.innerHTML='';controls.innerHTML='';cleanup=renderers[l.id]();history.replaceState(null,'',`#${l.id}`);area.scrollIntoView({behavior:'smooth'})}
+function group(label,html){return `<div class="control-group"><div class="control-label">${label}</div>${html}</div>`}
+function slider(id,label,min,max,step,val,unit=''){return group(`<span>${label}</span><span id="${id}Val">${val}${unit}</span>`,`<input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${val}">`)}
+function buttons(){return group('',`<div class="btn-row"><button id="start" class="btn">開始</button><button id="reset" class="btn secondary">リセット</button></div>`)}
+function canvasSetup(){stage.innerHTML='<canvas class="canvas"></canvas>';const c=stage.querySelector('canvas'),ctx=c.getContext('2d');const resize=()=>{const r=c.getBoundingClientRect();c.width=r.width*devicePixelRatio;c.height=r.height*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)};resize();window.addEventListener('resize',resize);return {c,ctx,resize,off:()=>window.removeEventListener('resize',resize)}}
+function rr(ctx,x,y,w,h,r=12){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+function text(ctx,t,x,y,size=16,color='#eef7ff',align='left'){ctx.fillStyle=color;ctx.font=`700 ${size}px system-ui`;ctx.textAlign=align;ctx.fillText(t,x,y)}
+function line(ctx,x1,y1,x2,y2,color='rgba(255,255,255,.5)',w=2){ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+
+const renderers={
+ motion(){let run=false,t=0,last=performance.now(),raf;controls.innerHTML=slider('angle','斜面の角度',5,30,1,15,'°')+slider('timerHz','記録タイマー',20,60,10,50,' Hz')+buttons()+`<div class="readout"><div class="meter"><span>速さ</span><b id="speedR">0.00 m/s</b></div><div class="meter"><span>経過時間</span><b id="timeR">0.00 s</b></div></div>`;const {c,ctx,off}=canvasSetup();let dots=[];function reset(){run=false;t=0;dots=[];setRunning(false);draw()}function draw(){const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);const a=+angle.value*Math.PI/180, sx=w*.16,sy=h*.72,len=w*.68,ex=sx+len*Math.cos(a),ey=sy-len*Math.sin(a);line(ctx,sx,sy,ex,ey,'#aac3d8',10);line(ctx,sx-25,sy+5,w*.9,sy+5,'rgba(255,255,255,.15)',3);const acc=9.8*Math.sin(a)*.12;const dist=Math.min(.5*acc*t*t,len/115);const px=sx+dist*115*Math.cos(a),py=sy-dist*115*Math.sin(a);ctx.save();ctx.translate(px,py-19);ctx.rotate(-a);ctx.fillStyle='#62e6c7';rr(ctx,-28,-14,56,24,7);ctx.fill();ctx.fillStyle='#081522';ctx.beginPath();ctx.arc(-17,13,8,0,7);ctx.arc(17,13,8,0,7);ctx.fill();ctx.restore();text(ctx,'記録タイマー',w*.08,h*.18,16,'#9fb4c9');dots.forEach(d=>{ctx.fillStyle='#ffd36e';ctx.beginPath();ctx.arc(d.x,d.y,3,0,7);ctx.fill()});text(ctx,`${angle.value}°`,sx+70,sy-20,18,'#62e6c7');speedR.textContent=`${(acc*t).toFixed(2)} m/s`;timeR.textContent=`${t.toFixed(2)} s`}
+ let nextDot=0;function loop(now){const dt=Math.min((now-last)/1000,.03);last=now;if(run){t+=dt;const hz=+timerHz.value;while(t>=nextDot){const a=+angle.value*Math.PI/180,acc=9.8*Math.sin(a)*.12,dist=.5*acc*nextDot*nextDot;if(dist<5.4)dots.push({x:c.clientWidth*.08+Math.min(dist*95,c.clientWidth*.76),y:c.clientHeight*.20});nextDot+=1/hz}if(t>5.4)run=false}draw();raf=requestAnimationFrame(loop)}
+ angle.oninput=()=>{angleVal.textContent=angle.value+'°';reset()};timerHz.oninput=()=>timerHzVal.textContent=timerHz.value+' Hz';start.onclick=()=>{if(t>5)reset();run=!run;last=performance.now();setRunning(run,run?'台車が運動中':'一時停止');start.textContent=run?'一時停止':'再開'};document.querySelector('#reset').onclick=()=>{nextDot=0;start.textContent='開始';reset()};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+ },
+ work(){let run=false,y=0,raf;controls.innerHTML=group('<span>滑車</span>',`<select id="pulley"><option value="fixed">定滑車</option><option value="movable">動滑車</option></select>`)+slider('mass','おもりの質量',100,500,50,200,' g')+buttons()+`<div class="readout"><div class="meter"><span>必要な力</span><b id="forceR">2.0 N</b></div><div class="meter"><span>引く距離</span><b id="distR">0 cm</b></div></div>`;const {c,ctx,off}=canvasSetup();function calc(){const weight=+mass.value/100;return pulley.value==='fixed'?weight:weight/2}function draw(){const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);line(ctx,w*.18,h*.18,w*.82,h*.18,'#aac3d8',8);const movable=pulley.value==='movable';const py=movable?h*.48-y:h*.24;ctx.strokeStyle='#d7e7f6';ctx.lineWidth=4;ctx.beginPath();if(movable){ctx.moveTo(w*.35,h*.18);ctx.lineTo(w*.35,py);ctx.arc(w*.45,py,42,Math.PI,0,false);ctx.lineTo(w*.66,h*.18+y*2)}else{ctx.moveTo(w*.35,h*.68-y);ctx.lineTo(w*.45,h*.24);ctx.arc(w*.5,h*.24,42,Math.PI,0,false);ctx.lineTo(w*.7,h*.68-y)}ctx.stroke();ctx.strokeStyle='#6e8daa';ctx.lineWidth=8;ctx.beginPath();ctx.arc(w*.45+(movable?0:w*.05),py,42,0,7);ctx.stroke();const bx=movable?w*.45:w*.35,by=movable?py+80:h*.68-y;ctx.fillStyle='#62e6c7';rr(ctx,bx-45,by-30,90,60,9);ctx.fill();text(ctx,`${mass.value} g`,bx,by+6,16,'#05231d','center');text(ctx,'↓ ひもを引く',w*.7,h*.72,16,'#ffd36e','center');forceR.textContent=calc().toFixed(1)+' N';distR.textContent=Math.round((movable?y*2:y))+' cm'}function loop(){if(run){y+=1.3;if(y>150){y=150;run=false;setRunning(false,'引き上げ完了')}}draw();raf=requestAnimationFrame(loop)}pulley.onchange=()=>{y=0;draw()};mass.oninput=()=>{massVal.textContent=mass.value+' g';draw()};start.onclick=()=>{run=!run;setRunning(run,run?'引き上げ中':'一時停止')};document.querySelector('#reset').onclick=()=>{run=false;y=0;setRunning(false);draw()};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+ },
+ conductivity(){const solutions={砂糖水:0,食塩水:.9,塩酸:1,水酸化ナトリウム水溶液:.85,エタノール水溶液:0,蒸留水:.02};let on=false,phase=0,raf;controls.innerHTML=group('<span>水溶液</span>',`<select id="solution">${Object.keys(solutions).map(s=>`<option>${s}</option>`).join('')}</select>`)+buttons()+`<div class="readout"><div class="meter"><span>電流</span><b id="ampR">0.00 A</b></div><div class="meter"><span>豆電球</span><b id="bulbR">消灯</b></div></div>`;const {c,ctx,off}=canvasSetup();function draw(){const w=c.clientWidth,h=c.clientHeight,cond=solutions[solution.value],power=on?cond:0;ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(190,226,255,.55)';ctx.lineWidth=4;ctx.strokeRect(w*.3,h*.38,w*.4,h*.36);ctx.fillStyle='rgba(68,142,220,.22)';ctx.fillRect(w*.305,h*.48,w*.39,h*.25);line(ctx,w*.4,h*.15,w*.4,h*.58,'#d7e7f6',8);line(ctx,w*.6,h*.15,w*.6,h*.58,'#d7e7f6',8);ctx.fillStyle=`rgba(255,220,95,${.1+power*.9})`;ctx.beginPath();ctx.arc(w*.5,h*.18,55,0,7);ctx.fill();ctx.strokeStyle='#ffd36e';ctx.lineWidth=4;ctx.stroke();if(on&&cond>.2){for(let i=0;i<16;i++){const x=w*.34+(i%8)*w*.043,y=h*.55+((i*23+phase)%80);ctx.fillStyle=i%2?'#72a7ff':'#ff9c9c';ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill()}}text(ctx,solution.value,w*.5,h*.84,20,'#eef7ff','center');ampR.textContent=(power*.25).toFixed(2)+' A';bulbR.textContent=power>.5?'点灯':power>.05?'わずかに点灯':'消灯';phase=(phase+1)%80}function loop(){draw();raf=requestAnimationFrame(loop)}solution.onchange=draw;start.onclick=()=>{on=!on;setRunning(on,on?'通電中':'電源OFF');start.textContent=on?'電源OFF':'電源ON'};document.querySelector('#reset').onclick=()=>{on=false;start.textContent='電源ON';setRunning(false);draw()};start.textContent='電源ON';raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+ },
+ electrolysis(){let on=false,p=0,raf;controls.innerHTML=slider('voltage','電圧',1,6,1,3,' V')+buttons()+`<div class="readout"><div class="meter"><span>通電時間</span><b id="elTime">0 s</b></div><div class="meter"><span>水溶液</span><b id="colorR">青色</b></div></div>`;const {c,ctx,off}=canvasSetup();function draw(){const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(190,226,255,.55)';ctx.lineWidth=4;ctx.strokeRect(w*.25,h*.28,w*.5,h*.5);const fade=Math.min(p/500,1);ctx.fillStyle=`rgba(34,126,210,${.5*(1-fade)+.08})`;ctx.fillRect(w*.255,h*.39,w*.49,h*.38);line(ctx,w*.38,h*.17,w*.38,h*.65,'#d7e7f6',13);line(ctx,w*.62,h*.17,w*.62,h*.65,'#d7e7f6',13);ctx.fillStyle='#d57645';ctx.fillRect(w*.365,h*.48,30,Math.min(p*.2,150));for(let i=0;i<Math.min(22,Math.floor(p/12));i++){ctx.fillStyle='rgba(204,255,199,.65)';ctx.beginPath();ctx.arc(w*.62+(i%3-1)*8,h*.56-((i*17+p*2)%130),4+(i%2),0,7);ctx.fill()}text(ctx,'−',w*.38,h*.11,28,'#72a7ff','center');text(ctx,'＋',w*.62,h*.11,28,'#ff9c9c','center');text(ctx,'銅が付着',w*.32,h*.83,15,'#dca27e','center');text(ctx,'気体が発生',w*.68,h*.83,15,'#bff5b8','center');elTime.textContent=Math.round(p/10)+' s';colorR.textContent=fade>.75?'かなり薄い青':fade>.35?'薄い青':'青色'}function loop(){if(on)p+=.35*+voltage.value;draw();raf=requestAnimationFrame(loop)}voltage.oninput=()=>voltageVal.textContent=voltage.value+' V';start.onclick=()=>{on=!on;setRunning(on,on?'通電中':'一時停止')};document.querySelector('#reset').onclick=()=>{on=false;p=0;setRunning(false)};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+ },
+ neutralization(){let acid=0;controls.innerHTML=slider('base','NaOH水溶液',5,30,1,20,' mL')+group('<span>塩酸を加える</span>',`<button id="drop" class="btn" style="width:100%">1 mL 加える</button>`)+buttons()+`<div class="readout"><div class="meter"><span>加えた塩酸</span><b id="acidR">0 mL</b></div><div class="meter"><span>pH</span><b id="phR">13.0</b></div></div>`;const {c,ctx,off}=canvasSetup();function values(){const b=+base.value,a=acid,equiv=b;let ph;if(a<equiv)ph=7+6*(1-a/equiv);else if(a===equiv)ph=7;else ph=Math.max(1,7-6*Math.min((a-equiv)/equiv,1));return {b,a,ph}}function col(ph){if(ph>7.5)return '#3189e8';if(ph<6.5)return '#ffd95f';return '#51c77b'}function draw(){const w=c.clientWidth,h=c.clientHeight,{ph}=values();ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(190,226,255,.55)';ctx.lineWidth=4;ctx.strokeRect(w*.32,h*.30,w*.36,h*.48);ctx.fillStyle=col(ph);ctx.globalAlpha=.65;ctx.fillRect(w*.325,h*.43,w*.35,h*.34);ctx.globalAlpha=1;line(ctx,w*.5,h*.08,w*.5,h*.34,'#d7e7f6',5);ctx.fillStyle='#d7e7f6';ctx.beginPath();ctx.moveTo(w*.485,h*.34);ctx.lineTo(w*.515,h*.34);ctx.lineTo(w*.5,h*.38);ctx.fill();for(let i=0;i<Math.min(acid,22);i++){ctx.fillStyle='#bfe2ff';ctx.beginPath();ctx.arc(w*.5,h*.18+(i%5)*11,4,0,7);ctx.fill()}text(ctx,'BTB',w*.5,h*.86,15,'#9fb4c9','center');acidR.textContent=acid+' mL';phR.textContent=ph.toFixed(1)}drop.onclick=()=>{acid=Math.min(acid+1,50);draw();setRunning(true,'塩酸を滴下')};base.oninput=()=>{baseVal.textContent=base.value+' mL';acid=0;draw()};start.style.display='none';document.querySelector('#reset').onclick=()=>{acid=0;setRunning(false);draw()};draw();return()=>off()
+ },
+ daniel(){let on=false,p=0,raf;controls.innerHTML=group('<span>回路</span>',`<div class="note">スイッチを入れると、亜鉛板側から銅板側へ電子が流れます。</div>`)+buttons()+`<div class="readout"><div class="meter"><span>電圧</span><b id="voltR">0.00 V</b></div><div class="meter"><span>電子</span><b id="electronR">停止</b></div></div>`;const {c,ctx,off}=canvasSetup();function draw(){const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);const bx=w*.11,bw=w*.28,by=h*.39,bh=h*.35;[['ZnSO₄',bx,'#6fbaff'],['CuSO₄',w*.61,'#2879cb']].forEach(([lab,x,colr])=>{ctx.strokeStyle='rgba(190,226,255,.5)';ctx.lineWidth=4;ctx.strokeRect(x,by,bw,bh);ctx.fillStyle=colr;ctx.globalAlpha=.3;ctx.fillRect(x+4,by+90,bw-8,bh-94);ctx.globalAlpha=1;text(ctx,lab,x+bw/2,by+bh+30,15,'#9fb4c9','center')});line(ctx,bx+bw*.5,by-10,bx+bw*.5,by+bh*.65,'#a9b4bf',16);line(ctx,w*.61+bw*.5,by-10,w*.61+bw*.5,by+bh*.65,'#c9794b',16);line(ctx,bx+bw*.5,by-10,w*.75,by-10,'#d7e7f6',4);ctx.strokeStyle='#d7e7f6';ctx.strokeRect(w*.47,by-45,w*.08,55);text(ctx,on?'1.10':'0.00',w*.51,by-11,14,'#eef7ff','center');if(on){for(let i=0;i<7;i++){const frac=((p+i*55)%380)/380,x=bx+bw*.5+frac*(w*.47);ctx.fillStyle='#62e6c7';ctx.beginPath();ctx.arc(x,by-10,5,0,7);ctx.fill()}}text(ctx,'亜鉛板',bx+bw*.5,by-60,16,'#d7e7f6','center');text(ctx,'銅板',w*.61+bw*.5,by-60,16,'#dca27e','center');voltR.textContent=on?'1.10 V':'0.00 V';electronR.textContent=on?'移動中':'停止'}function loop(){if(on)p+=2;draw();raf=requestAnimationFrame(loop)}start.textContent='スイッチON';start.onclick=()=>{on=!on;start.textContent=on?'スイッチOFF':'スイッチON';setRunning(on,on?'発電中':'回路が開いています')};document.querySelector('#reset').onclick=()=>{on=false;p=0;start.textContent='スイッチON';setRunning(false)};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+ },
+ cell(){let focus=50,mag=100,areaX=50,areaY=50;controls.innerHTML=group('<span>倍率</span>',`<select id="mag"><option value="40">40倍</option><option value="100" selected>100倍</option><option value="400">400倍</option></select>`)+slider('focus','ピント',0,100,1,50,'')+slider('areaX','観察位置 横',0,100,1,50,'%')+slider('areaY','観察位置 縦',0,100,1,50,'%')+`<div class="note">根の先端付近を動かして、分裂中の細胞を探せます。</div>`;const {c,ctx,off}=canvasSetup();function draw(){focus=+document.querySelector('#focus').value;mag=+document.querySelector('#mag').value;areaX=+document.querySelector('#areaX').value;areaY=+document.querySelector('#areaY').value;const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);ctx.save();ctx.beginPath();ctx.arc(w/2,h/2,Math.min(w,h)*.39,0,7);ctx.clip();ctx.fillStyle='#f1d2c4';ctx.fillRect(0,0,w,h);const blur=Math.abs(focus-58)/12;ctx.filter=`blur(${blur}px)`;const cell=mag===400?90:mag===100?50:28,ox=(areaX-50)*1.9,oy=(areaY-50)*1.6;for(let y=-cell;y<h+cell;y+=cell*.75){for(let x=-cell;x<w+cell;x+=cell){const xx=x+((Math.floor(y/cell)%2)*cell*.3)+ox%cell,yy=y+oy%cell;ctx.strokeStyle='rgba(127,68,87,.38)';ctx.lineWidth=2;ctx.strokeRect(xx,yy,cell*.9,cell*.67);const seed=(Math.floor((xx-ox)/cell)*31+Math.floor((yy-oy)/cell)*17+areaY);if(seed%9===0){ctx.fillStyle='#7c3d7f';ctx.beginPath();ctx.ellipse(xx+cell*.45,yy+cell*.33,cell*.18,cell*.09,seed%3,0,7);ctx.fill();if(seed%18===0){ctx.strokeStyle='#4e205a';ctx.lineWidth=3;line(ctx,xx+cell*.25,yy+cell*.22,xx+cell*.65,yy+cell*.45,'#4e205a',3);line(ctx,xx+cell*.65,yy+cell*.20,xx+cell*.30,yy+cell*.47,'#4e205a',3)}}else{ctx.fillStyle='rgba(126,73,105,.45)';ctx.beginPath();ctx.arc(xx+cell*.45,yy+cell*.34,cell*.10,0,7);ctx.fill()}}}ctx.restore();ctx.strokeStyle='#d7e7f6';ctx.lineWidth=8;ctx.beginPath();ctx.arc(w/2,h/2,Math.min(w,h)*.39,0,7);ctx.stroke();text(ctx,`${mag}×`,w*.82,h*.84,18,'#62e6c7','center')}
+ ['focus','areaX','areaY'].forEach(id=>document.querySelector('#'+id).oninput=()=>{document.querySelector('#'+id+'Val').textContent=document.querySelector('#'+id).value+(id==='focus'?'':'%');draw()});document.querySelector('#mag').onchange=draw;draw();return()=>off()
+ },
+ sky(){let season='春分',hour=6;controls.innerHTML=group('<span>季節</span>',`<select id="season"><option>春分</option><option>夏至</option><option>秋分</option><option>冬至</option></select>`)+slider('hour','時刻',4,20,.25,6,'時')+buttons()+`<div class="readout"><div class="meter"><span>方位</span><b id="azR">東</b></div><div class="meter"><span>高度</span><b id="altR">0°</b></div></div>`;const {c,ctx,off}=canvasSetup();let run=false,raf;function sun(){const shifts={春分:0,夏至:23,秋分:0,冬至:-23},sh=shifts[season.value];const daylight=12+sh/5.5,rise=12-daylight/2,set=12+daylight/2;if(hour<rise||hour>set)return {visible:false,alt:-5,az:0};const f=(hour-rise)/daylight,alt=Math.sin(Math.PI*f)*(48+sh*.45),az=90+180*f;return{visible:true,alt,az}}function draw(){const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);const cx=w/2,cy=h*.72,r=Math.min(w*.38,h*.48);ctx.strokeStyle='rgba(215,231,246,.25)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,cy,r,r*.45,0,Math.PI,0,true);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,0);ctx.stroke();line(ctx,cx-r,cy,cx+r,cy,'rgba(255,255,255,.25)',2);line(ctx,cx,cy-r,cx,cy,'rgba(255,255,255,.18)',2);text(ctx,'東',cx-r-22,cy+28,16,'#9fb4c9','center');text(ctx,'南',cx,cy+38,16,'#9fb4c9','center');text(ctx,'西',cx+r+22,cy+28,16,'#9fb4c9','center');const s=sun();if(s.visible){const x=cx-r+(s.az-90)/180*2*r,y=cy-Math.sin(s.alt*Math.PI/180)*r;ctx.fillStyle='#ffd36e';ctx.shadowColor='#ffd36e';ctx.shadowBlur=30;ctx.beginPath();ctx.arc(x,y,18,0,7);ctx.fill();ctx.shadowBlur=0;line(ctx,x,y,x,cy,'rgba(255,211,110,.25)',1)}text(ctx,season.value,cx,h*.13,22,'#eef7ff','center');azR.textContent=s.visible?(s.az<135?'東':s.az>225?'西':'南'):'地平線下';altR.textContent=Math.max(0,s.alt).toFixed(0)+'°'}function loop(){if(run){hour+=.015;if(hour>20)hour=4;document.querySelector('#hour').value=hour;hourVal.textContent=hour.toFixed(2)+'時'}draw();raf=requestAnimationFrame(loop)}document.querySelector('#season').onchange=draw;document.querySelector('#hour').oninput=()=>{hour=+document.querySelector('#hour').value;hourVal.textContent=hour+'時';draw()};start.textContent='時間を進める';start.onclick=()=>{run=!run;start.textContent=run?'停止':'時間を進める';setRunning(run,run?'時間経過中':'停止中')};document.querySelector('#reset').onclick=()=>{run=false;hour=6;document.querySelector('#hour').value=6;hourVal.textContent='6時';setRunning(false);draw()};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+ }
+};
+
+if(location.hash){const l=labs.find(x=>'#'+x.id===location.hash);if(l)setTimeout(()=>openLab(l),80)}
+
+</script>
+</body>
+</html>
