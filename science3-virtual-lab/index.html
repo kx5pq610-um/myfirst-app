@@ -134,6 +134,29 @@ ctx.stroke()}
 function clamp(v,a,b){
 return Math.max(a,Math.min(b,v))}
 
+function panelBox(ctx,x,y,w,h,label){
+ ctx.save();
+ ctx.fillStyle='#d8dde2';ctx.strokeStyle='#66737e';ctx.lineWidth=2;rr(ctx,x,y,w,h,8);ctx.fill();ctx.stroke();
+ if(label){ctx.fillStyle='#24313c';ctx.font='700 12px system-ui';ctx.textAlign='left';ctx.fillText(label,x+10,y+17)}
+ ctx.restore();
+}
+function drawPowerSupply(ctx,x,y,w,h,voltage,on){
+ panelBox(ctx,x,y,w,h,'直流電源装置');
+ ctx.fillStyle='#1b252e';rr(ctx,x+12,y+26,w-24,h-42,5);ctx.fill();
+ ctx.fillStyle=on?'#78f0ce':'#52606a';ctx.font='800 20px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText((on?Number(voltage).toFixed(1):'0.0')+' V',x+w*.5,y+54);
+ [['−','#3a78d4',.27],['＋','#d95061',.73]].forEach(([lab,col,f])=>{ctx.fillStyle=col;ctx.beginPath();ctx.arc(x+w*f,y+h-15,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17212a';ctx.font='800 13px system-ui';ctx.fillText(lab,x+w*f,y+h-11)});
+}
+function drawAnalogMeter(ctx,x,y,w,h,value,max,label='A'){
+ panelBox(ctx,x,y,w,h,'電流計');
+ const cx=x+w/2,cy=y+h*.72,R=Math.min(w*.36,h*.42);
+ ctx.strokeStyle='#303b44';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R,Math.PI,Math.PI*2);ctx.stroke();
+ for(let i=0;i<=10;i++){const a=Math.PI+i/10*Math.PI;const r1=R-7,r2=R;line(ctx,cx+Math.cos(a)*r1,cy+Math.sin(a)*r1,cx+Math.cos(a)*r2,cy+Math.sin(a)*r2,'#303b44',1)}
+ const f=clamp(value/max,0,1),a=Math.PI+f*Math.PI;line(ctx,cx,cy,cx+Math.cos(a)*(R-11),cy+Math.sin(a)*(R-11),'#d94a4a',2.5);
+ ctx.fillStyle='#25313a';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#24313c';ctx.font='700 12px system-ui';ctx.textAlign='center';ctx.fillText(label,cx,y+h-8);
+}
+function drawWire(ctx,pts,color='#cf3e4f',width=4){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.lineCap='butt';ctx.lineJoin='miter'}
+function pointerXY(c,e){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+
 
 const renderers={
 
@@ -358,472 +381,177 @@ off()}
 
 conductivity(){
 const sols={
-砂糖水:{
-c:0,label:'ほぼ流れない'}
-,食塩水:{
-c:.85,label:'よく流れる'}
-,塩酸:{
-c:1,label:'よく流れる'}
-,'水酸化ナトリウム水溶液':{
-c:.9,label:'よく流れる'}
-,エタノール水溶液:{
-c:0,label:'ほぼ流れない'}
-,蒸留水:{
-c:.02,label:'ほとんど流れない'}
-}
-;
-let on=false,raf,phase=0;
-controls.innerHTML=group('<span>水溶液</span>',`<select id="solution">${Object.keys(sols).map(s=>`<option>${
-s}
-</option>`).join('')}</select>`)+slider('depth','電極を下げる',0,100,1,0,'%')+buttons('スイッチON')+`<div class="readout"><div class="meter"><span>電流計</span><b id="ampR">0.00 A</b></div><div class="meter"><span>豆電球</span><b id="bulbR">消灯</b></div></div><div class="control-group"><div class="note">電極が液に触れていなければ、電解質でも電流は流れません。</div></div>`;
-const {
-c,ctx,off}
-=canvasSetup('電極を液へ下げてからスイッチON。液から出すと回路が切れます。');
-
-function power(){
-const immersed=+depth.value>42;
-return on&&immersed?sols[solution.value].c:0}
+ '砂糖水':{c:0,label:'ほぼ流れない'},'食塩水':{c:.85,label:'よく流れる'},'塩酸':{c:1,label:'よく流れる'},
+ '水酸化ナトリウム水溶液':{c:.9,label:'よく流れる'},'エタノール水溶液':{c:0,label:'ほぼ流れない'},'蒸留水':{c:.02,label:'ほとんど流れない'}
+};
+let on=false,raf,phase=0,dragElectrodes=false;
+controls.innerHTML=group('<span>水溶液</span>',`<select id="solution">${Object.keys(sols).map(s=>`<option>${s}</option>`).join('')}</select>`)+slider('depth','電極の深さ',0,100,1,0,'%')+buttons('スイッチON')+`<div class="readout"><div class="meter"><span>電流計</span><b id="ampR">0.00 A</b></div><div class="meter"><span>豆電球</span><b id="bulbR">消灯</b></div></div><div class="control-group"><div class="note">画面上の電極ホルダーを上下にドラッグできます。電極が液に触れなければ、電解質でも電流は流れません。</div></div>`;
+const {c,ctx,off}=canvasSetup('電極ホルダーを上下にドラッグ → スイッチON。実際の回路を組んだときの操作順を再現します。');
+function power(){const immersed=+depth.value>42;return on&&immersed?sols[solution.value].c:0}
+function electrodeY(){return c.clientHeight*.18+(+depth.value/100)*c.clientHeight*.36}
+function drawBulb(x,y,p){ctx.save();ctx.strokeStyle='#66737e';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,31,0,Math.PI*2);ctx.stroke();ctx.fillStyle=`rgba(255,220,95,${.10+p*.90})`;ctx.shadowColor='#ffd36e';ctx.shadowBlur=p*28;ctx.beginPath();ctx.arc(x,y,26,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;line(ctx,x-10,y+7,x,y-8,'#6f5a2c',2);line(ctx,x,y-8,x+10,y+7,'#6f5a2c',2);ctx.restore()}
 function draw(){
-const w=c.clientWidth,h=c.clientHeight,p=power(),d=+depth.value/100;
-ctx.clearRect(0,0,w,h);
-ctx.strokeStyle='rgba(190,226,255,.55)';
-ctx.lineWidth=4;
-ctx.strokeRect(w*.27,h*.38,w*.46,h*.39);
-ctx.fillStyle='rgba(74,151,225,.20)';
-ctx.fillRect(w*.275,h*.49,w*.45,h*.275);
-const ey=h*.19+d*h*.37;
-line(ctx,w*.40,h*.10,w*.40,ey,'#d7e7f6',11);
-line(ctx,w*.60,h*.10,w*.60,ey,'#d7e7f6',11);
-ctx.fillStyle=`rgba(255,220,95,${.08+p*.92})`;
-ctx.beginPath();
-ctx.arc(w*.5,h*.16,52,0,Math.PI*2);
-ctx.fill();
-ctx.strokeStyle='#ffd36e';
-ctx.lineWidth=4;
-ctx.stroke();
-if(p>.1){
-phase+=1.5;
-for(let i=0;
-i<18;
-i++){
-const xx=w*.33+(i%9)*w*.042,yy=h*.55+((i*31+phase)%92);
-ctx.fillStyle=i%2?'#72a7ff':'#ff9c9c';
-ctx.beginPath();
-ctx.arc(xx,yy,5,0,Math.PI*2);
-ctx.fill()}
+ const w=c.clientWidth,h=c.clientHeight,p=power(),ey=electrodeY();ctx.clearRect(0,0,w,h);
+ drawPowerSupply(ctx,w*.05,h*.06,w*.21,h*.15,3,on);drawAnalogMeter(ctx,w*.74,h*.06,w*.21,h*.16,p*.25,.25,'A');drawBulb(w*.50,h*.16,p);
+ ctx.strokeStyle='rgba(190,226,255,.62)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(w*.30,h*.40);ctx.lineTo(w*.70,h*.40);ctx.lineTo(w*.67,h*.80);ctx.lineTo(w*.33,h*.80);ctx.closePath();ctx.stroke();
+ ctx.fillStyle='rgba(74,151,225,.22)';ctx.beginPath();ctx.moveTo(w*.315,h*.53);ctx.lineTo(w*.685,h*.53);ctx.lineTo(w*.66,h*.78);ctx.lineTo(w*.34,h*.78);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#8f9ca7';rr(ctx,w*.36,ey-18,w*.28,18,5);ctx.fill();line(ctx,w*.42,ey,w*.42,ey+h*.17,'#343b40',12);line(ctx,w*.58,ey,w*.58,ey+h*.17,'#343b40',12);text(ctx,'炭素棒',w*.50,ey-27,13,'#b9c8d4','center');
+ drawWire(ctx,[[w*.105,h*.185],[w*.105,h*.29],[w*.42,h*.29],[w*.42,ey]],'#3a78d4',4);drawWire(ctx,[[w*.58,ey],[w*.58,h*.30],[w*.785,h*.30],[w*.785,h*.22]],'#cf3e4f',4);drawWire(ctx,[[w*.905,h*.14],[w*.94,h*.14],[w*.94,h*.32],[w*.53,h*.32],[w*.53,h*.19]],'#cf3e4f',4);drawWire(ctx,[[w*.47,h*.19],[w*.28,h*.19],[w*.28,h*.18],[w*.205,h*.18]],'#cf3e4f',4);
+ if(p>.1){phase+=1.5;for(let i=0;i<20;i++){const xx=w*.35+(i%10)*w*.033,yy=h*.59+((i*29+phase)%110);ctx.fillStyle=i%2?'#72a7ff':'#ff9c9c';ctx.beginPath();ctx.arc(xx,yy,4.5,0,Math.PI*2);ctx.fill()}}
+ text(ctx,solution.value,w*.5,h*.87,19,'#eef7ff','center');text(ctx,'↑ ここをドラッグ',w*.50,ey-48,13,'#ffd36e','center');ampR.textContent=(p*.25).toFixed(2)+' A';bulbR.textContent=p>.5?'点灯':p>.03?'ごく弱く点灯':'消灯';setRunning(on,on?(+depth.value>42?'通電中':'電極が液に触れていません'):'スイッチOFF');
 }
-text(ctx,solution.value,w*.5,h*.85,20,'#eef7ff','center');
-ampR.textContent=(p*.25).toFixed(2)+' A';
-bulbR.textContent=p>.5?'点灯':p>.03?'ごく弱く点灯':'消灯';
-setRunning(on,on?(+depth.value>42?'通電中':'電極が液に触れていません'):'スイッチOFF')}
-
-function loop(){
-draw();
-raf=requestAnimationFrame(loop)}
-solution.onchange=draw;
-depth.oninput=()=>{
-depthVal.textContent=depth.value+'%';
-draw()}
-;
-start.onclick=()=>{
-on=!on;
-start.textContent=on?'スイッチOFF':'スイッチON';
-draw()}
-;
-reset.onclick=()=>{
-on=false;
-depth.value=0;
-depthVal.textContent='0%';
-start.textContent='スイッチON';
-draw()}
-;
-raf=requestAnimationFrame(loop);
-return()=>{
-cancelAnimationFrame(raf);
-off()}
-}
-,
+function setDepthFromPointer(e){const p=pointerXY(c,e),h=c.clientHeight;const v=clamp((p.y-h*.18)/(h*.36)*100,0,100);depth.value=Math.round(v);depthVal.textContent=depth.value+'%';draw()}
+c.addEventListener('pointerdown',e=>{const p=pointerXY(c,e),ey=electrodeY(),w=c.clientWidth;if(p.x>w*.32&&p.x<w*.68&&Math.abs(p.y-ey)<55){dragElectrodes=true;c.setPointerCapture(e.pointerId);setDepthFromPointer(e)}});c.addEventListener('pointermove',e=>{if(dragElectrodes)setDepthFromPointer(e)});c.addEventListener('pointerup',()=>dragElectrodes=false);c.addEventListener('pointercancel',()=>dragElectrodes=false);
+function loop(){draw();raf=requestAnimationFrame(loop)}
+solution.onchange=draw;depth.oninput=()=>{depthVal.textContent=depth.value+'%';draw()};start.onclick=()=>{on=!on;start.textContent=on?'スイッチOFF':'スイッチON';draw()};reset.onclick=()=>{on=false;depth.value=0;depthVal.textContent='0%';start.textContent='スイッチON';draw()};
+raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+},
 
 electrolysis(){
-let on=false,charge=0,activeSeconds=0,raf,polarity=1,last=performance.now();
-controls.innerHTML=slider('voltage','電源電圧',1,6,1,3,' V')+slider('elDepth','電極の深さ',0,100,1,75,'%')+group('<span>極性</span>',`<select id="polarity"><option value="1">左：−　右：＋</option><option value="-1">左：＋　右：−</option></select>`)+buttons('電源ON')+`<div class="readout"><div class="meter"><span>通電時間</span><b id="elTime">0 s</b></div><div class="meter"><span>溶液の色</span><b id="colorR">青色</b></div></div><div class="control-group"><div class="note">銅は陰極（−極）側へ析出し、陽極（＋極）では気体が発生します。</div></div>`;
-const {
-c,ctx,off}
-=canvasSetup('電極を液に浸し、電源ON。極性を変えると析出する側も入れ替わります。');
-
-function active(){
-return on&&+elDepth.value>38}
+let on=false,charge=0,activeSeconds=0,raf,polarity=1,last=performance.now(),dragElectrodes=false;
+controls.innerHTML=slider('voltage','電源電圧',1,6,1,3,' V')+slider('elDepth','電極の深さ',0,100,1,75,'%')+group('<span>極性</span>',`<select id="polarity"><option value="1">左：−　右：＋</option><option value="-1">左：＋　右：−</option></select>`)+buttons('電源ON')+`<div class="readout"><div class="meter"><span>通電時間</span><b id="elTime">0 s</b></div><div class="meter"><span>溶液の色</span><b id="colorR">青色</b></div></div><div class="control-group"><div class="note">電極ホルダーを直接ドラッグできます。銅は陰極（−極）へ析出し、陽極（＋極）では塩素が発生するモデルです。</div></div>`;
+const {c,ctx,off}=canvasSetup('炭素電極を液へ浸す → 電源ON。極性を逆にすると、銅が付く側も入れ替わります。');
+function active(){return on&&+elDepth.value>38}
+function electrodeY(){return c.clientHeight*.17+(+elDepth.value/100)*c.clientHeight*.30}
 function draw(){
-const w=c.clientWidth,h=c.clientHeight,d=+elDepth.value/100,fade=clamp(charge/800,0,1),leftNeg=polarity===1,ey=h*.20+d*h*.45;
-ctx.clearRect(0,0,w,h);
-ctx.strokeStyle='rgba(190,226,255,.55)';
-ctx.lineWidth=4;
-ctx.strokeRect(w*.24,h*.30,w*.52,h*.48);
-ctx.fillStyle=`rgba(34,126,210,${.48*(1-fade)+.07})`;
-ctx.fillRect(w*.245,h*.42,w*.51,h*.35);
-line(ctx,w*.38,h*.12,w*.38,ey,'#d7e7f6',14);
-line(ctx,w*.62,h*.12,w*.62,ey,'#d7e7f6',14);
-const dep=clamp(charge*.09,0,135),cathX=leftNeg?w*.38:w*.62,anX=leftNeg?w*.62:w*.38;
-ctx.fillStyle='#c87844';
-ctx.fillRect(cathX-10,h*.48,20,dep);
-const bubbles=Math.min(26,Math.floor(charge/15));
-for(let i=0;
-i<bubbles;
-i++){
-ctx.fillStyle='rgba(206,255,205,.65)';
-ctx.beginPath();
-ctx.arc(anX+(i%3-1)*10,h*.67-((i*19+charge*1.7)%150),4+(i%2),0,Math.PI*2);
-ctx.fill()}
-text(ctx,leftNeg?'−':'＋',w*.38,h*.09,30,leftNeg?'#72a7ff':'#ff9c9c','center');
-text(ctx,leftNeg?'＋':'−',w*.62,h*.09,30,leftNeg?'#ff9c9c':'#72a7ff','center');
-text(ctx,'Cu',cathX,h*.84,16,'#dca27e','center');
-elTime.textContent=activeSeconds.toFixed(1)+' s';
-colorR.textContent=fade>.75?'かなり薄い青':fade>.35?'薄い青':'青色';
-setRunning(on,active()?'通電中':'電源ON・電極が浅い')}
-
-function loop(now){
-const dt=Math.min((now-last)/1000,.04);
-last=now;
-if(active()){
-activeSeconds+=dt;
-charge+=dt*(+voltage.value)*12;
+ const w=c.clientWidth,h=c.clientHeight,d=+elDepth.value/100,fade=clamp(charge/800,0,1),leftNeg=polarity===1,ey=electrodeY();ctx.clearRect(0,0,w,h);
+ drawPowerSupply(ctx,w*.06,h*.055,w*.24,h*.16,+voltage.value,on);
+ // ビーカーと塩化銅水溶液
+ ctx.strokeStyle='rgba(190,226,255,.62)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(w*.27,h*.38);ctx.lineTo(w*.73,h*.38);ctx.lineTo(w*.69,h*.81);ctx.lineTo(w*.31,h*.81);ctx.closePath();ctx.stroke();
+ ctx.fillStyle=`rgba(34,126,210,${.52*(1-fade)+.08})`;ctx.beginPath();ctx.moveTo(w*.285,h*.50);ctx.lineTo(w*.715,h*.50);ctx.lineTo(w*.675,h*.79);ctx.lineTo(w*.325,h*.79);ctx.closePath();ctx.fill();
+ // ホルダーと電極
+ ctx.fillStyle='#909da8';rr(ctx,w*.35,ey-18,w*.30,18,5);ctx.fill();line(ctx,w*.40,ey,w*.40,ey+h*.22,'#333a40',14);line(ctx,w*.60,ey,w*.60,ey+h*.22,'#333a40',14);
+ const cathX=leftNeg?w*.40:w*.60,anX=leftNeg?w*.60:w*.40,dep=clamp(charge*.09,0,145);
+ ctx.fillStyle='#bd6f3d';ctx.fillRect(cathX-9,h*.54,18,dep);
+ const bubbles=Math.min(30,Math.floor(charge/14));for(let i=0;i<bubbles;i++){ctx.fillStyle='rgba(210,255,210,.68)';ctx.beginPath();ctx.arc(anX+(i%3-1)*10,h*.71-((i*19+charge*1.7)%160),4+(i%2),0,Math.PI*2);ctx.fill()}
+ // 配線
+ const negX=leftNeg?w*.40:w*.60,posX=leftNeg?w*.60:w*.40;
+ drawWire(ctx,[[w*.125,h*.20],[w*.125,h*.29],[negX,h*.29],[negX,ey]],'#3a78d4',4);drawWire(ctx,[[w*.235,h*.20],[w*.235,h*.26],[posX,h*.26],[posX,ey]],'#cf3e4f',4);
+ text(ctx,leftNeg?'−':'＋',w*.40,ey-29,26,leftNeg?'#72a7ff':'#ff9c9c','center');text(ctx,leftNeg?'＋':'−',w*.60,ey-29,26,leftNeg?'#ff9c9c':'#72a7ff','center');
+ text(ctx,'炭素電極',w*.50,ey-47,13,'#b9c8d4','center');text(ctx,'↑ ドラッグ',w*.50,ey-65,12,'#ffd36e','center');
+ text(ctx,'塩化銅水溶液',w*.50,h*.87,18,'#eef7ff','center');text(ctx,'銅が付着',cathX,h*.84,13,'#e7ae8b','center');text(ctx,'気体',anX,h*.84,13,'#c7f5c2','center');
+ elTime.textContent=activeSeconds.toFixed(1)+' s';colorR.textContent=fade>.75?'かなり薄い青':fade>.35?'薄い青':'青色';setRunning(on,active()?'通電中':'電源ON・電極が浅い');
 }
-draw();
-raf=requestAnimationFrame(loop)}
-voltage.oninput=()=>voltageVal.textContent=voltage.value+' V';
-elDepth.oninput=()=>elDepthVal.textContent=elDepth.value+'%';
-polarity.onchange=()=>{
-polarity=+document.querySelector('#polarity').value;
-draw()}
-;
-start.onclick=()=>{
-on=!on;
-start.textContent=on?'電源OFF':'電源ON'}
-;
-reset.onclick=()=>{
-on=false;
-charge=0;
-activeSeconds=0;
-start.textContent='電源ON';
-setRunning(false,'準備完了')}
-;
-raf=requestAnimationFrame(loop);
-return()=>{
-cancelAnimationFrame(raf);
-off()}
-}
-,
+function setDepth(e){const p=pointerXY(c,e),h=c.clientHeight;const v=clamp((p.y-h*.17)/(h*.30)*100,0,100);elDepth.value=Math.round(v);elDepthVal.textContent=elDepth.value+'%';draw()}
+c.addEventListener('pointerdown',e=>{const p=pointerXY(c,e),ey=electrodeY(),w=c.clientWidth;if(p.x>w*.32&&p.x<w*.68&&Math.abs(p.y-ey)<55){dragElectrodes=true;c.setPointerCapture(e.pointerId);setDepth(e)}});c.addEventListener('pointermove',e=>{if(dragElectrodes)setDepth(e)});c.addEventListener('pointerup',()=>dragElectrodes=false);c.addEventListener('pointercancel',()=>dragElectrodes=false);
+function loop(now){const dt=Math.min((now-last)/1000,.04);last=now;if(active()){activeSeconds+=dt;charge+=dt*(+voltage.value)*12}draw();raf=requestAnimationFrame(loop)}
+voltage.oninput=()=>voltageVal.textContent=voltage.value+' V';elDepth.oninput=()=>{elDepthVal.textContent=elDepth.value+'%';draw()};polarity.onchange=()=>{polarity=+document.querySelector('#polarity').value;draw()};
+start.onclick=()=>{on=!on;start.textContent=on?'電源OFF':'電源ON';draw()};reset.onclick=()=>{on=false;charge=0;activeSeconds=0;start.textContent='電源ON';setRunning(false,'準備完了');draw()};
+raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+},
 
 neutralization(){
-let acid=0,flow=false,stir=false,raf,last=performance.now();
-controls.innerHTML=slider('baseVol','NaOH水溶液',10,30,1,20,' mL')+slider('conc','濃度（両方）',0.05,0.20,0.05,0.10,' mol/L')+group('<span>指示薬</span>',`<select id="indicator"><option value="btb">BTB溶液</option><option value="pp">フェノールフタレイン</option></select>`)+group('<span>ビュレット</span>',`<div class="switchline"><button id="cock" class="btn">コックを開く</button><button id="oneDrop" class="btn secondary">1滴</button></div>`)+group('<span>かき混ぜ</span>',`<button id="stirBtn" class="btn secondary full">ガラス棒でかき混ぜる</button>`)+`<div class="readout"><div class="meter"><span>加えた塩酸</span><b id="acidR">0.00 mL</b></div><div class="meter"><span>pH</span><b id="phR">13.0</b></div></div><div class="control-group"><button id="reset" class="btn secondary full">最初から</button></div>`;
-const {
-c,ctx,off}
-=canvasSetup('ビュレットのコックを開くと連続滴下。中性付近は色が急に変わります。');
-
-function phCalc(){
-const b=+baseVol.value/1000,c=+conc.value,a=acid/1000;
-const nOH=b*c,nH=a*c,V=b+a;
-if(Math.abs(nOH-nH)<1e-7)return 7;
-let pH;
-if(nOH>nH){
-const oh=(nOH-nH)/V;
-pH=14-(-Math.log10(oh))}
-else{
-const h=(nH-nOH)/V;
-pH=-Math.log10(h)}
-return clamp(pH,0,14)}
-function color(ph){
-if(indicator.value==='pp')return ph>9?'rgba(246,92,166,.68)':'rgba(210,231,255,.15)';
-if(ph>7.6)return 'rgba(49,137,232,.70)';
-if(ph<6)return 'rgba(255,217,95,.75)';
-return 'rgba(81,199,123,.70)'}
+let acid=0,flow=false,stir=false,raf,last=performance.now(),dragCock=false;
+controls.innerHTML=slider('baseVol','NaOH水溶液',10,30,1,20,' mL')+slider('conc','濃度（両方）',0.05,0.20,0.05,0.10,' mol/L')+group('<span>指示薬</span>',`<select id="indicator"><option value="btb">BTB溶液</option><option value="pp">フェノールフタレイン</option></select>`)+group('<span>ビュレット</span>',`<div class="switchline"><button id="cock" class="btn">コックを開く</button><button id="oneDrop" class="btn secondary">1滴</button></div>`)+group('<span>かき混ぜ</span>',`<button id="stirBtn" class="btn secondary full">ガラス棒でかき混ぜる</button>`)+`<div class="readout"><div class="meter"><span>ビュレット滴下量</span><b id="acidR">0.00 mL</b></div><div class="meter"><span>pH</span><b id="phR">13.0</b></div></div><div class="control-group"><button id="reset" class="btn secondary full">最初から</button><div class="note" style="margin-top:10px">画面上のコックもクリックできます。ビュレットの液面は滴下量に応じて下がります。</div></div>`;
+const {c,ctx,off}=canvasSetup('ビュレットのコックをクリックして滴下。中和点付近では色の変化が急になります。');
+function phCalc(){const b=+baseVol.value/1000,c0=+conc.value,a=acid/1000,nOH=b*c0,nH=a*c0,V=b+a;if(Math.abs(nOH-nH)<1e-7)return 7;if(nOH>nH){const oh=(nOH-nH)/V;return clamp(14+Math.log10(oh),0,14)}const h=(nH-nOH)/V;return clamp(-Math.log10(h),0,14)}
+function color(ph){if(indicator.value==='pp')return ph>9?'rgba(246,92,166,.68)':'rgba(225,239,255,.18)';if(ph>7.6)return 'rgba(49,137,232,.70)';if(ph<6)return 'rgba(255,217,95,.75)';return 'rgba(81,199,123,.70)'}
+function cockRect(w,h){return{x:w*.47,y:h*.39,w:w*.12,h:24}}
 function draw(){
-const w=c.clientWidth,h=c.clientHeight,ph=phCalc();
-ctx.clearRect(0,0,w,h);
-ctx.strokeStyle='rgba(210,230,245,.6)';
-ctx.lineWidth=4;
-ctx.strokeRect(w*.47,h*.07,26,h*.38);
-for(let i=0;
-i<10;
-i++)line(ctx,w*.50,h*.10+i*h*.032,w*.53,h*.10+i*h*.032,'rgba(255,255,255,.35)',1);
-ctx.fillStyle='rgba(215,235,255,.22)';
-ctx.fillRect(w*.475,h*.11,16,h*.30);
-ctx.fillStyle=cock.classList.contains('danger')?'#ff7c8f':'#62e6c7';
-ctx.fillRect(w*.455,h*.43,66,9);
-ctx.strokeStyle='rgba(190,226,255,.55)';
-ctx.lineWidth=4;
-ctx.beginPath();
-ctx.moveTo(w*.30,h*.52);
-ctx.lineTo(w*.70,h*.52);
-ctx.lineTo(w*.66,h*.83);
-ctx.lineTo(w*.34,h*.83);
-ctx.closePath();
-ctx.stroke();
-ctx.fillStyle=color(ph);
-ctx.beginPath();
-ctx.moveTo(w*.335,h*.67);
-ctx.lineTo(w*.665,h*.67);
-ctx.lineTo(w*.64,h*.80);
-ctx.lineTo(w*.36,h*.80);
-ctx.closePath();
-ctx.fill();
-if(flow){
-for(let i=0;
-i<4;
-i++){
-ctx.fillStyle='#bfe2ff';
-ctx.beginPath();
-ctx.arc(w*.50,h*.48+i*18,4,0,Math.PI*2);
-ctx.fill()}
+ const w=c.clientWidth,h=c.clientHeight,ph=phCalc(),cr=cockRect(w,h),bTop=h*.08,bBot=h*.40,bx=w*.51,bw=28;
+ ctx.clearRect(0,0,w,h);
+ // スタンド
+ ctx.fillStyle='#596875';ctx.fillRect(w*.18,h*.82,w*.32,12);ctx.fillRect(w*.28,h*.12,10,h*.70);ctx.fillRect(w*.285,h*.18,w*.20,8);ctx.fillStyle='#8c9aa5';ctx.fillRect(w*.44,h*.16,18,18);
+ // ビュレット本体
+ ctx.strokeStyle='rgba(220,237,247,.75)';ctx.lineWidth=3;ctx.strokeRect(bx-bw/2,bTop,bw,bBot-bTop);
+ const maxMl=60,fillFrac=clamp(1-acid/maxMl,0,1),liqY=bBot-(bBot-bTop)*fillFrac;ctx.fillStyle='rgba(195,225,248,.28)';ctx.fillRect(bx-bw/2+4,liqY,bw-8,bBot-liqY);
+ for(let i=0;i<=20;i++){const yy=bTop+(bBot-bTop)*i/20;line(ctx,bx+bw/2,yy,bx+bw/2+(i%5===0?16:9),yy,'rgba(238,247,255,.5)',1)}
+ text(ctx,'0',bx+32,bTop+5,11,'#9fb4c9');text(ctx,'50',bx+34,bBot,11,'#9fb4c9');
+ // コック
+ ctx.fillStyle=flow?'#ff7c8f':'#62e6c7';rr(ctx,cr.x,cr.y,cr.w,cr.h,7);ctx.fill();ctx.fillStyle='#1a2832';ctx.fillRect(bx-4,cr.y+cr.h,bw*.28,h*.09);text(ctx,flow?'閉じる':'開く',cr.x+cr.w/2,cr.y+17,12,'#08231d','center');
+ // フラスコ
+ ctx.strokeStyle='rgba(190,226,255,.62)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(w*.43,h*.56);ctx.lineTo(w*.57,h*.56);ctx.lineTo(w*.65,h*.82);ctx.lineTo(w*.35,h*.82);ctx.closePath();ctx.stroke();
+ ctx.fillStyle=color(ph);ctx.beginPath();ctx.moveTo(w*.385,h*.70);ctx.lineTo(w*.615,h*.70);ctx.lineTo(w*.64,h*.80);ctx.lineTo(w*.36,h*.80);ctx.closePath();ctx.fill();
+ // 滴下
+ if(flow){for(let i=0;i<4;i++){ctx.fillStyle='#bfe2ff';ctx.beginPath();ctx.arc(bx,h*.50+i*19,4,0,Math.PI*2);ctx.fill()}}
+ // ガラス棒
+ if(stir){ctx.save();ctx.translate(w*.56,h*.66);ctx.rotate(Math.sin(performance.now()/120)*.3);line(ctx,0,-100,0,95,'#dbe8ef',5);ctx.restore()}
+ text(ctx,'塩酸',bx,bTop-16,15,'#bfe2ff','center');text(ctx,indicator.value==='btb'?'BTB入りNaOH':'フェノールフタレイン入りNaOH',w*.5,h*.89,14,'#9fb4c9','center');
+ acidR.textContent=acid.toFixed(2)+' mL';phR.textContent=ph.toFixed(2);setRunning(flow,flow?'滴下中':stir?'かき混ぜ中':'コック閉');
 }
-if(stir){
-ctx.save();
-ctx.translate(w*.57,h*.67);
-ctx.rotate(Math.sin(performance.now()/120)*.3);
-line(ctx,0,-120,0,80,'#dbe8ef',5);
-ctx.restore()}
-text(ctx,'塩酸',w*.50,h*.055,15,'#bfe2ff','center');
-text(ctx,indicator.value==='btb'?'BTB':'フェノールフタレイン',w*.5,h*.89,15,'#9fb4c9','center');
-acidR.textContent=acid.toFixed(2)+' mL';
-phR.textContent=ph.toFixed(2);
-setRunning(flow,flow?'滴下中':stir?'かき混ぜ中':'コック閉')}
-
-function loop(now){
-const dt=Math.min((now-last)/1000,.04);
-last=now;
-if(flow)acid=Math.min(acid+dt*2.2,60);
-draw();
-raf=requestAnimationFrame(loop)}
-cock.onclick=()=>{
-flow=!flow;
-cock.textContent=flow?'コックを閉じる':'コックを開く';
-cock.classList.toggle('danger',flow)}
-;
-oneDrop.onclick=()=>{
-acid=Math.min(acid+.05,60);
-draw()}
-;
-stirBtn.onclick=()=>{
-stir=!stir;
-stirBtn.textContent=stir?'かき混ぜを止める':'ガラス棒でかき混ぜる'}
-;
-baseVol.oninput=()=>{
-baseVolVal.textContent=baseVol.value+' mL';
-acid=0}
-;
-conc.oninput=()=>{
-concVal.textContent=(+conc.value).toFixed(2)+' mol/L';
-acid=0}
-;
-indicator.onchange=draw;
-reset.onclick=()=>{
-acid=0;
-flow=false;
-stir=false;
-cock.textContent='コックを開く';
-cock.classList.remove('danger');
-stirBtn.textContent='ガラス棒でかき混ぜる';
-draw()}
-;
-raf=requestAnimationFrame(loop);
-return()=>{
-cancelAnimationFrame(raf);
-off()}
-}
-,
+function loop(now){const dt=Math.min((now-last)/1000,.04);last=now;if(flow)acid=Math.min(acid+dt*1.8,60);draw();raf=requestAnimationFrame(loop)}
+function toggleCock(){flow=!flow;cock.textContent=flow?'コックを閉じる':'コックを開く';cock.classList.toggle('danger',flow);draw()}
+c.addEventListener('pointerdown',e=>{const p=pointerXY(c,e),r=cockRect(c.clientWidth,c.clientHeight);if(p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h){toggleCock();c.setPointerCapture(e.pointerId);dragCock=true}});c.addEventListener('pointerup',()=>dragCock=false);
+cock.onclick=toggleCock;oneDrop.onclick=()=>{acid=Math.min(acid+.05,60);draw()};stirBtn.onclick=()=>{stir=!stir;stirBtn.textContent=stir?'かき混ぜを止める':'ガラス棒でかき混ぜる';draw()};
+baseVol.oninput=()=>{baseVolVal.textContent=baseVol.value+' mL';acid=0;draw()};conc.oninput=()=>{concVal.textContent=(+conc.value).toFixed(2)+' mol/L';acid=0;draw()};indicator.onchange=draw;
+reset.onclick=()=>{acid=0;flow=false;stir=false;cock.textContent='コックを開く';cock.classList.remove('danger');stirBtn.textContent='ガラス棒でかき混ぜる';draw()};
+raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+},
 
 daniel(){
 let sw=false,bridge=true,progress=0,raf,last=performance.now();
-controls.innerHTML=group('<span>塩橋</span>',`<button id="bridgeBtn" class="btn full">塩橋を外す</button>`)+buttons('スイッチON')+`<div class="readout"><div class="meter"><span>電圧</span><b id="voltR">0.00 V</b></div><div class="meter"><span>電流</span><b id="currentR">0.00 A</b></div></div><div class="control-group"><div class="legend"><span><i class="dot" style="background:#62e6c7"></i>電子</span><span><i class="dot" style="background:#72a7ff"></i>陽イオン</span><span><i class="dot" style="background:#ff9c9c"></i>陰イオン</span></div></div>`;
-const {
-c,ctx,off}
-=canvasSetup('塩橋を外すと、回路がつながっていても電流が止まります。');
-
-function active(){
-return sw&&bridge}
+controls.innerHTML=group('<span>塩橋</span>',`<button id="bridgeBtn" class="btn full">塩橋を外す</button>`)+buttons('スイッチON')+`<div class="readout"><div class="meter"><span>電圧</span><b id="voltR">0.00 V</b></div><div class="meter"><span>電流</span><b id="currentR">0.00 A</b></div></div><div class="control-group"><div class="legend"><span><i class="dot" style="background:#62e6c7"></i>電子</span><span><i class="dot" style="background:#72a7ff"></i>陽イオン</span><span><i class="dot" style="background:#ff9c9c"></i>陰イオン</span></div><div class="note" style="margin-top:10px">画面上の塩橋をクリックして、抜き差しすることもできます。</div></div>`;
+const {c,ctx,off}=canvasSetup('スイッチを閉じ、塩橋を入れると発電。塩橋を抜くとすぐに電流が止まります。');
+function active(){return sw&&bridge}
+function bridgeHit(w,h){return{x:w*.39,y:h*.24,w:w*.22,h:h*.20}}
 function draw(){
-const w=c.clientWidth,h=c.clientHeight;
-ctx.clearRect(0,0,w,h);
-const lx=w*.10,rx=w*.62,bw=w*.28,by=h*.39,bh=h*.34;
-[['ZnSO₄',lx,'#6fbaff'],['CuSO₄',rx,'#2879cb']].forEach(([lab,x,col])=>{
-ctx.strokeStyle='rgba(190,226,255,.5)';
-ctx.lineWidth=4;
-ctx.strokeRect(x,by,bw,bh);
-ctx.fillStyle=col;
-ctx.globalAlpha=.27;
-ctx.fillRect(x+4,by+85,bw-8,bh-89);
-ctx.globalAlpha=1;
-text(ctx,lab,x+bw/2,by+bh+28,15,'#9fb4c9','center')}
-);
-const znX=lx+bw*.5,cuX=rx+bw*.5;
-line(ctx,znX,by-10,znX,by+bh*.66,'#a9b4bf',16);
-line(ctx,cuX,by-10,cuX,by+bh*.66,'#c9794b',16);
-line(ctx,znX,by-10,cuX,by-10,'#d7e7f6',4);
-ctx.strokeStyle='#d7e7f6';
-ctx.strokeRect(w*.47,by-48,w*.08,58);
-text(ctx,active()?'1.10':'0.00',w*.51,by-12,14,'#eef7ff','center');
-if(bridge){
-ctx.strokeStyle='#ead9ae';
-ctx.lineWidth=16;
-ctx.beginPath();
-ctx.moveTo(lx+bw*.74,by+62);
-ctx.bezierCurveTo(w*.46,by-80,w*.54,by-80,rx+bw*.26,by+62);
-ctx.stroke()}
-if(active()){
-for(let i=0;
-i<7;
-i++){
-const f=((progress+i*55)%380)/380,x=znX+f*(cuX-znX);
-ctx.fillStyle='#62e6c7';
-ctx.beginPath();
-ctx.arc(x,by-10,5,0,Math.PI*2);
-ctx.fill()}
-for(let i=0;
-i<10;
-i++){
-const x=lx+35+(i%5)*32,y=by+125+((i*17+progress*.4)%70);
-ctx.fillStyle=i%2?'#72a7ff':'#ff9c9c';
-ctx.beginPath();
-ctx.arc(x,y,4,0,Math.PI*2);
-ctx.fill()}
+ const w=c.clientWidth,h=c.clientHeight;ctx.clearRect(0,0,w,h);const lx=w*.08,rx=w*.64,bw=w*.27,by=h*.43,bh=h*.32,znX=lx+bw*.5,cuX=rx+bw*.5;
+ // 溶液・容器
+ [['ZnSO₄',lx,'#8bbce8'],['CuSO₄',rx,'#2879cb']].forEach(([lab,x,col])=>{ctx.strokeStyle='rgba(190,226,255,.58)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,by);ctx.lineTo(x+bw,by);ctx.lineTo(x+bw*.94,by+bh);ctx.lineTo(x+bw*.06,by+bh);ctx.closePath();ctx.stroke();ctx.fillStyle=col;ctx.globalAlpha=.30;ctx.beginPath();ctx.moveTo(x+bw*.03,by+80);ctx.lineTo(x+bw*.97,by+80);ctx.lineTo(x+bw*.90,by+bh-5);ctx.lineTo(x+bw*.10,by+bh-5);ctx.closePath();ctx.fill();ctx.globalAlpha=1;text(ctx,lab,x+bw/2,by+bh+28,15,'#9fb4c9','center')});
+ // 電極
+ line(ctx,znX,by-10,znX,by+bh*.70,'#a9b4bf',18);line(ctx,cuX,by-10,cuX,by+bh*.70,'#c9794b',18);text(ctx,'亜鉛板',znX,by-54,15,'#d7e7f6','center');text(ctx,'銅板',cuX,by-54,15,'#dca27e','center');
+ // 電圧計と配線
+ drawAnalogMeter(ctx,w*.40,h*.055,w*.20,h*.17,active()?1.1:0,1.5,'V');
+ drawWire(ctx,[[znX,by-10],[znX,h*.20],[w*.43,h*.20]],'#3a78d4',4);drawWire(ctx,[[w*.57,h*.20],[cuX,h*.20],[cuX,by-10]],'#cf3e4f',4);
+ // スイッチ
+ const sx=w*.68,sy=h*.17;ctx.fillStyle='#d7e7f6';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.arc(sx+54,sy,6,0,Math.PI*2);ctx.fill();line(ctx,sx,sy,sx+(sw?54:43),sy+(sw?0:-25),'#ffd36e',5);text(ctx,sw?'閉':'開',sx+27,sy-36,12,'#ffd36e','center');
+ // 塩橋
+ if(bridge){ctx.strokeStyle='#ead9ae';ctx.lineWidth=17;ctx.beginPath();ctx.moveTo(lx+bw*.76,by+52);ctx.bezierCurveTo(w*.43,by-120,w*.57,by-120,rx+bw*.24,by+52);ctx.stroke();text(ctx,'塩橋（クリック）',w*.50,by-93,13,'#f2e1b6','center')}else{text(ctx,'塩橋を外しています',w*.50,by-72,13,'#ff9c9c','center')}
+ if(active()){
+  for(let i=0;i<7;i++){const f=((progress+i*55)%380)/380,x=znX+f*(cuX-znX);ctx.fillStyle='#62e6c7';ctx.beginPath();ctx.arc(x,h*.20,5,0,Math.PI*2);ctx.fill()}
+  for(let i=0;i<12;i++){const left=i<6,x=(left?lx:rx)+38+(i%6)*28,y=by+125+((i*17+progress*.35)%65);ctx.fillStyle=i%2?'#72a7ff':'#ff9c9c';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()}
+ }
+ const dissolve=clamp(progress/1800,0,.34);ctx.fillStyle='rgba(7,17,31,'+dissolve+')';ctx.fillRect(znX-11,by+44,22,bh*.55);ctx.fillStyle='#c87844';ctx.fillRect(cuX-12,by+44,24,Math.min(progress*.015,52));
+ voltR.textContent=active()?'1.10 V':'0.00 V';currentR.textContent=active()?'0.18 A':'0.00 A';setRunning(active(),active()?'発電中':sw&&!bridge?'塩橋がないため停止':'回路が開いています');
 }
-const dissolve=clamp(progress/1800,0,.32);
-ctx.fillStyle='rgba(7,17,31,'+dissolve+')';
-ctx.fillRect(znX-10,by+40,20,bh*.52);
-ctx.fillStyle='#c87844';
-ctx.fillRect(cuX-12,by+40,24,Math.min(progress*.015,50));
-text(ctx,'亜鉛板',znX,by-64,16,'#d7e7f6','center');
-text(ctx,'銅板',cuX,by-64,16,'#dca27e','center');
-voltR.textContent=active()?'1.10 V':'0.00 V';
-currentR.textContent=active()?'0.18 A':'0.00 A';
-setRunning(active(),active()?'発電中':sw&&!bridge?'塩橋がないため停止':'回路が開いています')}
-
-function loop(now){
-const dt=Math.min((now-last)/1000,.04);
-last=now;
-if(active())progress+=dt*70;
-draw();
-raf=requestAnimationFrame(loop)}
-bridgeBtn.onclick=()=>{
-bridge=!bridge;
-bridgeBtn.textContent=bridge?'塩橋を外す':'塩橋を入れる';
-draw()}
-;
-start.onclick=()=>{
-sw=!sw;
-start.textContent=sw?'スイッチOFF':'スイッチON';
-draw()}
-;
-reset.onclick=()=>{
-sw=false;
-bridge=true;
-progress=0;
-start.textContent='スイッチON';
-bridgeBtn.textContent='塩橋を外す';
-draw()}
-;
-raf=requestAnimationFrame(loop);
-return()=>{
-cancelAnimationFrame(raf);
-off()}
-}
-,
+function toggleBridge(){bridge=!bridge;bridgeBtn.textContent=bridge?'塩橋を外す':'塩橋を入れる';draw()}
+c.addEventListener('pointerdown',e=>{const p=pointerXY(c,e),r=bridgeHit(c.clientWidth,c.clientHeight);if(p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h)toggleBridge()});
+function loop(now){const dt=Math.min((now-last)/1000,.04);last=now;if(active())progress+=dt*70;draw();raf=requestAnimationFrame(loop)}
+bridgeBtn.onclick=toggleBridge;start.onclick=()=>{sw=!sw;start.textContent=sw?'スイッチOFF':'スイッチON';draw()};reset.onclick=()=>{sw=false;bridge=true;progress=0;start.textContent='スイッチON';bridgeBtn.textContent='塩橋を外す';draw()};
+raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+},
 
 cell(){
-let raf;
-controls.innerHTML=group('<span>対物レンズ</span>',`<select id="mag"><option value="40">低倍率 40×</option><option value="100" selected>100×</option><option value="400">高倍率 400×</option></select>`)+slider('stageX','ステージ 横移動',0,100,1,46,'%')+slider('stageY','ステージ 縦移動',0,100,1,72,'%')+slider('coarse','粗動ねじ',0,100,1,54,'')+slider('fine','微動ねじ',0,100,1,52,'')+`<div class="control-group"><button id="homeCell" class="btn secondary full">根の先端付近へ戻す</button><div class="note" style="margin-top:10px">高倍率にすると視野が狭くなります。先に低倍率で位置を決めるのがコツです。</div></div>`;
-const {
-c,ctx,off}
-=canvasSetup('ステージを動かし、粗動→微動でピント合わせ。根端分裂組織を探します。');
-
+let raf,dragStage=false,lastP=null;
+controls.innerHTML=group('<span>対物レンズ</span>',`<select id="mag"><option value="40">低倍率 40×</option><option value="100" selected>100×</option><option value="400">高倍率 400×</option></select>`)+slider('stageX','ステージ 横移動',0,100,1,46,'%')+slider('stageY','ステージ 縦移動',0,100,1,72,'%')+slider('coarse','粗動ねじ',0,100,1,54,'')+slider('fine','微動ねじ',0,100,1,52,'')+`<div class="control-group"><button id="homeCell" class="btn secondary full">根の先端付近へ戻す</button><div class="note" style="margin-top:10px">円形の視野をドラッグするとステージが動きます。先に低倍率で位置を決め、粗動→微動の順でピントを合わせます。</div></div>`;
+const {c,ctx,off}=canvasSetup('視野をドラッグ＝プレパラートを動かす操作。ピントは粗動ねじ→微動ねじの順に合わせます。');
+function viewGeom(){const w=c.clientWidth,h=c.clientHeight;return{cx:w*.68,cy:h*.48,R:Math.min(w*.27,h*.34)}}
+function focusError(){const yv=+stageY.value,target=52+(yv-70)*.03;return Math.abs((+coarse.value*.75 + +fine.value*.25)-target)}
+function drawMicroscope(w,h){
+ // 台座
+ ctx.fillStyle='#798896';rr(ctx,w*.06,h*.78,w*.34,h*.055,10);ctx.fill();
+ // 鏡柱・アーム
+ ctx.strokeStyle='#9ba9b4';ctx.lineWidth=22;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(w*.22,h*.76);ctx.quadraticCurveTo(w*.08,h*.48,w*.22,h*.23);ctx.stroke();ctx.lineCap='butt';
+ // 鏡筒
+ ctx.save();ctx.translate(w*.25,h*.28);ctx.rotate(-.30);ctx.fillStyle='#d9e0e5';rr(ctx,-20,-80,40,150,9);ctx.fill();ctx.fillStyle='#252e35';rr(ctx,-18,-92,36,35,6);ctx.fill();ctx.restore();
+ // レボルバー・対物レンズ
+ ctx.fillStyle='#4d5861';ctx.beginPath();ctx.arc(w*.29,h*.37,28,0,Math.PI*2);ctx.fill();
+ const lenses=[{dx:-18,len:38},{dx:0,len:50},{dx:18,len:62}];lenses.forEach((o,i)=>{ctx.fillStyle=i===1?'#d7a44b':'#bfc7cc';rr(ctx,w*.285+o.dx-6,h*.39,12,o.len,3);ctx.fill()});
+ // ステージ
+ ctx.fillStyle='#505d67';rr(ctx,w*.13,h*.53,w*.25,18,3);ctx.fill();ctx.fillStyle='#1b2329';ctx.beginPath();ctx.arc(w*.255,h*.54,12,0,Math.PI*2);ctx.fill();
+ // 光源
+ ctx.fillStyle='#65747f';ctx.beginPath();ctx.arc(w*.255,h*.68,34,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd36e';ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(w*.255,h*.68,21,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+ // 調節ねじ
+ ctx.fillStyle='#d0d7dc';ctx.beginPath();ctx.arc(w*.13,h*.40,24,0,Math.PI*2);ctx.fill();ctx.fillStyle='#596670';ctx.beginPath();ctx.arc(w*.13,h*.40,12,0,Math.PI*2);ctx.fill();text(ctx,'粗',w*.13,h*.405,11,'#eef7ff','center');
+ ctx.fillStyle='#d0d7dc';ctx.beginPath();ctx.arc(w*.175,h*.44,16,0,Math.PI*2);ctx.fill();text(ctx,'微',w*.175,h*.445,10,'#25313a','center');
+ text(ctx,'顕微鏡',w*.21,h*.90,16,'#9fb4c9','center');
+}
 function draw(){
-const w=c.clientWidth,h=c.clientHeight,m=+mag.value,xv=+stageX.value,yv=+stageY.value;
-ctx.clearRect(0,0,w,h);
-const R=Math.min(w,h)*.39,cx=w/2,cy=h/2;
-ctx.save();
-ctx.beginPath();
-ctx.arc(cx,cy,R,0,Math.PI*2);
-ctx.clip();
-ctx.fillStyle='#f4d7ca';
-ctx.fillRect(0,0,w,h);
-const targetFocus=52+(yv-70)*.03,focusError=Math.abs((+coarse.value*.75 + +fine.value*.25)-targetFocus);
-ctx.filter=`blur(${clamp(focusError/5,0,6)}px)`;
-const cell=m===400?88:m===100?48:25,scale=m/100,ox=(xv-50)*5*scale,oy=(yv-50)*5*scale;
-for(let yy=-cell;
-yy<h+cell;
-yy+=cell*.74){
-for(let xx=-cell;
-xx<w+cell;
-xx+=cell){
-const px=xx+((Math.floor(yy/cell)%2)*cell*.28)+ox%cell,py=yy+oy%cell;
-ctx.strokeStyle='rgba(120,68,83,.36)';
-ctx.lineWidth=2;
-ctx.strokeRect(px,py,cell*.9,cell*.67);
-const worldY=(py-oy)/scale;
-const inDivisionZone=yv>58&&yv<90;
-const seed=(Math.floor((px-ox)/cell)*37+Math.floor((py-oy)/cell)*19);
-if(inDivisionZone && seed%7===0){
-ctx.strokeStyle='#57205f';
-ctx.lineWidth=3;
-const type=Math.abs(seed)%4;
-if(type===0){
-line(ctx,px+cell*.25,py+cell*.20,px+cell*.65,py+cell*.46,'#57205f',3);
-line(ctx,px+cell*.65,py+cell*.20,px+cell*.30,py+cell*.48,'#57205f',3)}
-else if(type===1){
-line(ctx,px+cell*.48,py+cell*.15,px+cell*.48,py+cell*.52,'#57205f',4)}
-else if(type===2){
-ctx.beginPath();
-ctx.arc(px+cell*.35,py+cell*.34,cell*.10,0,Math.PI*2);
-ctx.arc(px+cell*.60,py+cell*.34,cell*.10,0,Math.PI*2);
-ctx.stroke()}
-else{
-ctx.fillStyle='#7b3f81';
-ctx.beginPath();
-ctx.ellipse(px+cell*.46,py+cell*.34,cell*.18,cell*.09,.5,0,Math.PI*2);
-ctx.fill()}
+ const w=c.clientWidth,h=c.clientHeight,m=+mag.value,xv=+stageX.value,yv=+stageY.value,{cx,cy,R}=viewGeom(),fe=focusError();ctx.clearRect(0,0,w,h);drawMicroscope(w,h);
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();ctx.fillStyle='#f4d7ca';ctx.fillRect(cx-R,cy-R,R*2,R*2);ctx.filter=`blur(${clamp(fe/5,0,6)}px)`;
+ const cell=m===400?88:m===100?48:25,scale=m/100,ox=(xv-50)*5*scale,oy=(yv-50)*5*scale;
+ for(let yy=cy-R-cell;yy<cy+R+cell;yy+=cell*.74){for(let xx=cx-R-cell;xx<cx+R+cell;xx+=cell){const px=xx+((Math.floor(yy/cell)%2)*cell*.28)+ox%cell,py=yy+oy%cell;ctx.strokeStyle='rgba(120,68,83,.36)';ctx.lineWidth=2;ctx.strokeRect(px,py,cell*.9,cell*.67);const inDivisionZone=yv>58&&yv<90,seed=(Math.floor((px-ox)/cell)*37+Math.floor((py-oy)/cell)*19);if(inDivisionZone&&seed%7===0){ctx.strokeStyle='#57205f';ctx.lineWidth=3;const type=Math.abs(seed)%4;if(type===0){line(ctx,px+cell*.25,py+cell*.20,px+cell*.65,py+cell*.46,'#57205f',3);line(ctx,px+cell*.65,py+cell*.20,px+cell*.30,py+cell*.48,'#57205f',3)}else if(type===1){line(ctx,px+cell*.48,py+cell*.15,px+cell*.48,py+cell*.52,'#57205f',4)}else if(type===2){ctx.beginPath();ctx.arc(px+cell*.35,py+cell*.34,cell*.10,0,Math.PI*2);ctx.arc(px+cell*.60,py+cell*.34,cell*.10,0,Math.PI*2);ctx.stroke()}else{ctx.fillStyle='#7b3f81';ctx.beginPath();ctx.ellipse(px+cell*.46,py+cell*.34,cell*.18,cell*.09,.5,0,Math.PI*2);ctx.fill()}}else{ctx.fillStyle='rgba(126,73,105,.42)';ctx.beginPath();ctx.arc(px+cell*.45,py+cell*.34,cell*.09,0,Math.PI*2);ctx.fill()}}}
+ ctx.restore();ctx.strokeStyle='#d7e7f6';ctx.lineWidth=8;ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+ text(ctx,`${m}×`,cx+R*.65,cy+R*.84,18,'#62e6c7','center');text(ctx,fe<2?'ピント良好':fe<6?'あと少し':'ぼけています',cx-R*.55,cy+R*.84,15,fe<2?'#62e6c7':'#ffd36e','center');text(ctx,'視野をドラッグ',cx,cy-R-22,13,'#ffd36e','center');setRunning(true,'観察中');
 }
-else{
-ctx.fillStyle='rgba(126,73,105,.42)';
-ctx.beginPath();
-ctx.arc(px+cell*.45,py+cell*.34,cell*.09,0,Math.PI*2);
-ctx.fill()}
-}
-}
-ctx.restore();
-ctx.strokeStyle='#d7e7f6';
-ctx.lineWidth=8;
-ctx.beginPath();
-ctx.arc(cx,cy,R,0,Math.PI*2);
-ctx.stroke();
-text(ctx,`${m}×`,w*.82,h*.84,18,'#62e6c7','center');
-text(ctx,focusError<2?'ピント良好':focusError<6?'あと少し':'ぼけています',w*.18,h*.84,16,focusError<2?'#62e6c7':'#ffd36e','center');
-setRunning(focusError<2,true?'観察中':'観察中')}
-
-['stageX','stageY','coarse','fine'].forEach(id=>document.querySelector('#'+id).oninput=()=>{
-document.querySelector('#'+id+'Val').textContent=document.querySelector('#'+id).value+(id.startsWith('stage')?'%':'');
-draw()}
-);
-mag.onchange=draw;
-homeCell.onclick=()=>{
-stageX.value=46;
-stageY.value=72;
-coarse.value=54;
-fine.value=52;
-['stageX','stageY'].forEach(id=>document.querySelector('#'+id+'Val').textContent=document.querySelector('#'+id).value+'%');
-coarseVal.textContent='54';
-fineVal.textContent='52';
-draw()}
-;
-function loop(){
-draw();
-raf=requestAnimationFrame(loop)}
-raf=requestAnimationFrame(loop);
-return()=>{
-cancelAnimationFrame(raf);
-off()}
-}
-,
+function syncStageLabels(){stageXVal.textContent=stageX.value+'%';stageYVal.textContent=stageY.value+'%'}
+c.addEventListener('pointerdown',e=>{const p=pointerXY(c,e),{cx,cy,R}=viewGeom();if(Math.hypot(p.x-cx,p.y-cy)<=R){dragStage=true;lastP=p;c.setPointerCapture(e.pointerId)}});
+c.addEventListener('pointermove',e=>{if(!dragStage)return;const p=pointerXY(c,e),m=+mag.value,sens=m===400?.08:m===100?.16:.30;stageX.value=clamp(+stageX.value-(p.x-lastP.x)*sens,0,100);stageY.value=clamp(+stageY.value-(p.y-lastP.y)*sens,0,100);lastP=p;syncStageLabels();draw()});c.addEventListener('pointerup',()=>dragStage=false);c.addEventListener('pointercancel',()=>dragStage=false);
+c.addEventListener('wheel',e=>{const p=pointerXY(c,e),{cx,cy,R}=viewGeom();if(Math.hypot(p.x-cx,p.y-cy)<=R){e.preventDefault();fine.value=clamp(+fine.value+(e.deltaY>0?1:-1),0,100);fineVal.textContent=fine.value;draw()}},{passive:false});
+['stageX','stageY','coarse','fine'].forEach(id=>document.querySelector('#'+id).oninput=()=>{document.querySelector('#'+id+'Val').textContent=document.querySelector('#'+id).value+(id.startsWith('stage')?'%':'');draw()});mag.onchange=draw;
+homeCell.onclick=()=>{stageX.value=46;stageY.value=72;coarse.value=54;fine.value=52;syncStageLabels();coarseVal.textContent='54';fineVal.textContent='52';draw()};
+function loop(){draw();raf=requestAnimationFrame(loop)}raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}
+},
 
 sky(){
 let hour=6,run=false,marks=[],raf,last=performance.now();
