@@ -48,8 +48,104 @@ sunpath(){let hour=8,marks=[];controls.innerHTML=range('hour','時刻',7,17,.5,8
 starpath(){let dir='南',mins=0,shots=[];controls.innerHTML=select('dir','観察する空',[['東','東'],['南','南'],['西','西'],['北','北']])+range('mins','経過時間',0,120,30,0,'分')+ctl('',buttons(btn('shot','撮影する'),btn('starClear','撮影を消す','secondary')))+ctl('',`<div class="note">地上の景色を入れて同じ方向を撮影し、0分・30分・60分などの写真を比較します。</div>`);const {c,ctx,off}=canvas();const base=Array.from({length:25},(_,i)=>({x:(i*47%91)/100,y:(i*29%53)/100+.08}));function shift(p,m){const d=m/4; if(dir==='南')return{x:p.x+d/100,y:p.y};if(dir==='北'){const a=Math.atan2(p.y-.45,p.x-.5)+m*Math.PI/720,r=Math.hypot(p.x-.5,p.y-.45);return{x:.5+r*Math.cos(a),y:.45+r*Math.sin(a)}}if(dir==='東')return{x:p.x,y:p.y-d/100};return{x:p.x,y:p.y+d/100}}function draw(){const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#020617');g.addColorStop(.7,'#0b1b38');g.addColorStop(1,'#17283b');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.fillStyle='#081018';ctx.fillRect(0,h*.78,w,h*.22);for(let i=0;i<8;i++){ctx.fillStyle='#111a21';ctx.fillRect(i*w/8,h*.69+(i%3)*20,w/10,h*.12)}const times=[...shots,mins];times.forEach((m,j)=>base.forEach((p,i)=>{const q=shift(p,m);if(q.x<0||q.x>1||q.y<0||q.y>.74)return;circ(ctx,q.x*w,q.y*h,2+(i%3===0),j===times.length-1?'#fff8c4':'rgba(116,170,255,.5)')}));txt(ctx,`${dir}の空　${mins}分後`,w/2,42,18,'#eef7ff','center');txt(ctx,'地上の景色を基準に位置を比べる',w/2,h*.91,15,'#9fb4c9','center')}dir.onchange=()=>{dir=el('#dir').value;shots=[];draw()};el('#mins').oninput=()=>{mins=+el('#mins').value;el('#minsVal').textContent=mins+'分';draw()};shot.onclick=()=>{if(!shots.includes(mins))shots.push(mins);setStatus(`${shots.length}枚撮影`,true);draw()};starClear.onclick=()=>{shots=[];setStatus('準備');draw()};draw();return off},
 venus(){let pos=0;controls.innerHTML=range('vpos','金星の位置',0,7,1,0,'')+ctl('',`<div class="note">8か所に金星モデルを置き、地球側から見た明るい面と見かけの大きさを比べます。</div>`)+`<div class="readout">${meter('見える形','phaseR','—')}${meter('見かけの大きさ','sizeR','—')}</div>`;const {c,ctx,off}=canvas();function calc(){const theta=pos*Math.PI/4,V={x:.58*Math.cos(theta),y:.58*Math.sin(theta)},E={x:1,y:0};const sv={x:-V.x,y:-V.y},ev={x:E.x-V.x,y:E.y-V.y};const dot=(sv.x*ev.x+sv.y*ev.y)/(Math.hypot(sv.x,sv.y)*Math.hypot(ev.x,ev.y));const alpha=Math.acos(Math.max(-1,Math.min(1,dot))),illum=(1+Math.cos(alpha))/2,dist=Math.hypot(ev.x,ev.y);return{V,illum,dist}}function drawPhase(x,y,r,illum){circ(ctx,x,y,r,'#222');ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.clip();ctx.fillStyle='#fff4b4';const ww=2*r*Math.max(.03,illum);ctx.beginPath();ctx.ellipse(x-r+ww/2,y,ww/2,r,0,0,7);ctx.fill();ctx.restore();ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke()}function draw(){const w=W(c),h=H(c),cx=w*.38,cy=h*.47,R=Math.min(w,h)*.27,{V,illum,dist}=calc();ctx.clearRect(0,0,w,h);circ(ctx,cx,cy,28,'#ffd36a');ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R*.58,0,7);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();const ex=cx+R,ey=cy;circ(ctx,ex,ey,14,'#72a7ff');txt(ctx,'地球',ex,ey+35,13,'#9fb4c9','center');const vx=cx+V.x*R,vy=cy+V.y*R;circ(ctx,vx,vy,10,'#fff4b4');txt(ctx,'金星',vx,vy-17,12,'#eef7ff','center');const sr=Math.max(16,45/dist);drawPhase(w*.80,h*.44,sr,illum);txt(ctx,'地球から見た金星',w*.80,h*.24,15,'#9fb4c9','center');phaseR.textContent=illum>.78?'丸く見える':illum>.45?'半月に近い':illum>.12?'三日月状':'ほぼ新月';sizeR.textContent=dist<.7?'大きい':dist<1.2?'中くらい':'小さい'}el('#vpos').oninput=()=>{pos=+el('#vpos').value;el('#vposVal').textContent=`位置 ${pos+1}`;draw()};el('#vposVal').textContent='位置 1';draw();return off},
 conduct(){const sols={water:{n:'蒸留水',cond:0,change:'変化なし'},hcl:{n:'2.5%塩酸',cond:.9,change:'電極付近から気体'},naoh:{n:'2.5%水酸化ナトリウム水溶液',cond:.85,change:'電極付近から気体'},sugar:{n:'2.5%砂糖水',cond:0,change:'変化なし'},eth:{n:'エタノールと水の混合物',cond:0,change:'変化なし'},cucl:{n:'2.5%塩化銅水溶液',cond:.8,change:'電極の色変化・気体'}};let key='water',down=false,power=false,rinsed=true,contam=0;controls.innerHTML=select('sol','水溶液',Object.entries(sols).map(([k,v])=>[k,v.n]))+ctl('',buttons(btn('lower','電極を入れる'),btn('rinse','蒸留水で洗う','secondary')))+ctl('',btn('power','電源ON'))+`<div class="readout">${meter('電流計','ampR','0')}${meter('モーター','motorR','停止')}</div>`+ctl('',`<div class="note">水溶液を変える前に、電極の先を蒸留水で洗う操作も再現しています。</div>`);const {c,ctx,off}=canvas();function effective(){return down&&power?Math.max(sols[key].cond,contam*.16):0}function draw(){const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);rr(ctx,w*.06,65,w*.25,145,15,'#d7e0e5','#71808b');txt(ctx,'電源装置 3 V',w*.185,95,16,'#26343d','center');circ(ctx,w*.12,170,10,'#222');circ(ctx,w*.25,170,10,'#d8504f');beaker(ctx,w*.40,h*.40,w*.27,h*.33,key==='cucl'?'rgba(35,126,210,.38)':'rgba(115,185,235,.16)');const yy=down?h*.48:h*.28;line(ctx,w*.48,h*.20,w*.48,yy+h*.18,'#434b51',14);line(ctx,w*.59,h*.20,w*.59,yy+h*.18,'#434b51',14);line(ctx,w*.12,170,w*.48,h*.20,'#111',4);line(ctx,w*.25,170,w*.59,h*.20,'#e14949',4);meterDial(ctx,w*.80,h*.33,60,effective(),'A');const e=effective();circ(ctx,w*.82,h*.67,45,e>.05?'#64e2c4':'#253242','#667');for(let i=0;i<3;i++){ctx.save();ctx.translate(w*.82,h*.67);ctx.rotate((performance.now()/400)+(i*2.09));rr(ctx,-5,-42,10,38,4,e>.05?'#7effcf':'#607080');ctx.restore()}txt(ctx,'光電池用モーター',w*.82,h*.80,13,'#9fb4c9','center');txt(ctx,sols[key].n,w*.535,h*.82,16,'#eef7ff','center');if(down&&e>.05)txt(ctx,sols[key].change,w*.535,h*.88,13,'#ffd36a','center');ampR.textContent=e?`${Math.round(e*100)}（相対）`:'0';motorR.textContent=e>.08?'回転':'停止'}let raf;function loop(){draw();raf=requestAnimationFrame(loop)}sol.onchange=()=>{if(key!==sol.value&&!rinsed)contam=Math.max(contam,sols[key].cond);key=sol.value;rinsed=false};lower.onclick=()=>{down=!down;lower.textContent=down?'電極を上げる':'電極を入れる';setStatus(down?'電極を浸した':'準備',down)};rinse.onclick=()=>{contam=0;rinsed=true;setStatus('電極を洗浄')};power.onclick=()=>{power=!power;power.textContent=power?'電源OFF':'電源ON';setStatus(power?'通電中':'電源OFF',power)};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
-hcl(){let filled=false,on=false,v=6,gas=0,test='';controls.innerHTML=ctl('',btn('fill','うすい塩酸100 cm³を入れる'))+range('volt','電圧',0,6,.5,6,' V')+ctl('',btn('hpower','電流を流す'))+ctl('たまった気体を調べる',buttons(btn('testH','陰極：火を近づける','secondary'),btn('testCl','陽極：液を赤インク水へ','secondary')))+`<div class="readout">${meter('陰極側','hgas','0目盛')}${meter('陽極側','clgas','0目盛')}</div>`;const {c,ctx,off}=canvas();let raf;function draw(){const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);txt(ctx,'うすい塩酸の電気分解装置',w/2,55,22,'#eef7ff','center');rr(ctx,w*.26,h*.24,w*.48,h*.50,18,'rgba(203,220,229,.1)','#9ab0c0');if(filled){ctx.fillStyle='rgba(117,185,235,.19)';ctx.fillRect(w*.29,h*.38,w*.42,h*.32)}for(const [x,lab,col] of [[w*.39,'陰極','#111'],[w*.61,'陽極','#e34e4e']]){rr(ctx,x-37,h*.21,74,h*.43,10,'rgba(220,240,255,.08)','#afc5d6');ctx.fillStyle=col;ctx.fillRect(x-6,h*.42,12,h*.20);txt(ctx,lab,x,h*.18,15,'#eef7ff','center');for(let i=0;i<4;i++){line(ctx,x-28,h*.31+i*30,x-18,h*.31+i*30,'#8aa0b0',1);txt(ctx,String(i+1),x-40,h*.315+i*30,11,'#9fb4c9','center')}}if(filled){const gh=Math.min(4,gas)*30;ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(w*.39-30,h*.59-gh,60,gh);ctx.fillRect(w*.61-30,h*.59-gh*.85,60,gh*.85)}if(test)txt(ctx,test,w/2,h*.87,17,test.includes('水素')?'#64e2c4':'#ffd36a','center');hgas.textContent=`${Math.min(4,gas).toFixed(1)}目盛`;clgas.textContent=`${Math.min(4,gas*.85).toFixed(1)}目盛`;if(on&&filled&&v>0){gas+=v*.00055;if(gas>=4){gas=4;on=false;hpower.textContent='電流を流す';setStatus('4目盛で停止')}}}
-function loop(){draw();raf=requestAnimationFrame(loop)}fill.onclick=()=>{filled=true;gas=0;test='';setStatus('塩酸を充填')};el('#volt').oninput=()=>{v=+el('#volt').value;el('#voltVal').textContent=v+' V'};hpower.onclick=()=>{if(!filled){setStatus('先に塩酸を入れる');return}on=!on;hpower.textContent=on?'スイッチを切る':'電流を流す';setStatus(on?'通電中':'停止',on)};testH.onclick=()=>{test=gas>.4?'陰極側：音を立てて燃える → 水素':'気体がまだ少ない'};testCl.onclick=()=>{test=gas>.4?'陽極側：刺激臭・赤インクが脱色 → 塩素':'気体がまだ少ない'};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
+hcl(){
+  let filled=false,airPurged=false,on=false,gasH=0,gasCl=0,test='',raf;
+  const voltage=6;
+  controls.innerHTML=
+    ctl('装置の準備',
+      buttons(btn('fill','ろうとで塩酸100 cm³を入れる'),btn('purge','前面を液で満たす','secondary'))
+    )+
+    ctl('',btn('hpower','6 Vで電流を流す'))+
+    ctl('発生した物質を調べる',
+      buttons(btn('testH','陰極側：マッチの火','secondary'),btn('testCl','陽極側：上部の液を調べる','secondary'))
+    )+
+    `<div class="readout">${meter('陰極側の気体','hgas','0.0目盛')}${meter('陽極側の気体','clgas','0.0目盛')}</div>`+
+    ctl('',`<div class="note">教科書どおり、前面を液で満たして空気が残らない状態にしてから通電します。どちらかの気体が4目盛たまったらスイッチを切ります。</div>`);
+  const {c,ctx,off}=canvas();
+
+  function draw(){
+    const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);
+    txt(ctx,'うすい塩酸の電気分解',w/2,48,22,'#eef7ff','center');
+    rr(ctx,w*.25,h*.20,w*.50,h*.56,18,'rgba(206,224,235,.10)','#9fb0be');
+
+    // two graduated tubes
+    const tubes=[{x:w*.39,label:'陰極',col:'#111',g:gasH},{x:w*.61,label:'陽極',col:'#df4c4c',g:gasCl}];
+    tubes.forEach(t=>{
+      rr(ctx,t.x-38,h*.23,76,h*.43,10,'rgba(225,240,250,.07)','#adc2d0');
+      for(let i=0;i<5;i++){line(ctx,t.x-30,h*.31+i*34,t.x-18,h*.31+i*34,'#8097a7',1);txt(ctx,String(i+1),t.x-48,h*.315+i*34,11,'#9fb4c9','center')}
+      ctx.fillStyle=t.col;ctx.fillRect(t.x-6,h*.43,12,h*.20);
+      txt(ctx,t.label,t.x,h*.17,15,'#eef7ff','center');
+      if(filled){
+        const baseY=h*.64;
+        const gh=Math.min(4,t.g)*34;
+        ctx.fillStyle='rgba(255,255,255,.68)';
+        ctx.fillRect(t.x-31,baseY-gh,62,gh);
+      }
+    });
+
+    // rear funnel and stopper
+    rr(ctx,w*.72,h*.30,36,58,6,'#b33b35','#d9c5bd');
+    line(ctx,w*.76,h*.30,w*.83,h*.19,'#c8d8e2',5);
+    ctx.strokeStyle='#c8d8e2';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(w*.80,h*.20);ctx.lineTo(w*.86,h*.20);ctx.lineTo(w*.83,h*.26);ctx.stroke();
+    txt(ctx,'ろうと',w*.85,h*.17,12,'#9fb4c9','center');
+
+    if(filled){
+      ctx.fillStyle='rgba(115,185,235,.18)';
+      ctx.fillRect(w*.28,h*.42,w*.44,h*.29);
+    }
+    if(!airPurged&&filled){
+      ctx.fillStyle='rgba(255,255,255,.30)';
+      ctx.fillRect(w*.28,h*.36,w*.44,h*.06);
+      txt(ctx,'空気が残っている',w*.50,h*.39,12,'#ffd36a','center');
+    }
+    if(on&&airPurged){
+      for(let i=0;i<14;i++){
+        circ(ctx,w*.39+(i%2?4:-4),h*.59-((performance.now()/15+i*19)%90),2.5,'rgba(255,255,255,.78)');
+        circ(ctx,w*.61+(i%2?4:-4),h*.59-((performance.now()/18+i*23)%90),2.3,'rgba(230,255,190,.68)');
+      }
+    }
+    if(test) txt(ctx,test,w/2,h*.88,16,test.includes('水素')?'#64e2c4':'#ffd36a','center');
+
+    hgas.textContent=gasH.toFixed(1)+'目盛';
+    clgas.textContent=gasCl.toFixed(1)+'目盛';
+  }
+
+  function loop(){
+    if(on&&filled&&airPurged){
+      gasH+=.0034*voltage;
+      gasCl+=.0022*voltage; // 塩素は水に溶けやすく、管にたまりにくい
+      if(gasH>=4||gasCl>=4){
+        gasH=Math.min(4,gasH); gasCl=Math.min(4,gasCl);
+        on=false; hpower.textContent='6 Vで電流を流す'; setStatus('4目盛でスイッチを切った');
+      }
+    }
+    draw();raf=requestAnimationFrame(loop);
+  }
+
+  fill.onclick=()=>{
+    filled=true;airPurged=false;gasH=gasCl=0;test='';
+    setStatus('背面の穴から100 cm³入れた',true);
+  };
+  purge.onclick=()=>{
+    if(!filled){setStatus('先に塩酸を入れる');return}
+    airPurged=true;setStatus('前面を液で満たした',true);
+  };
+  hpower.onclick=()=>{
+    if(!filled){setStatus('先に塩酸を100 cm³入れる');return}
+    if(!airPurged){setStatus('空気が残らないよう前面を液で満たす');return}
+    on=!on;hpower.textContent=on?'スイッチを切る':'6 Vで電流を流す';setStatus(on?'通電中':'停止',on);
+  };
+  testH.onclick=()=>{
+    if(gasH<.7){test='陰極側：まだ気体が少ない';return}
+    test='陰極側：一瞬「ポン」と音を立てて燃える → 水素';
+  };
+  testCl.onclick=()=>{
+    if(gasCl<.4){test='陽極側：まだ気体が少ない';return}
+    test='陽極側：プールを消毒したようなにおい・赤インクを脱色 → 塩素';
+  };
+  raf=requestAnimationFrame(loop);
+  return()=>{cancelAnimationFrame(raf);off()}
+},
 metals(){
   const ms=['Mg','Zn','Cu'];
   const ss=['Mg2','Zn2','Cu2'];
@@ -115,13 +211,271 @@ metals(){
   };
   active();draw();return off;
 },
-daniel(){let method='A',assembled=false,connected=false,t=0,raf;controls.innerHTML=select('method','方法',[['A','A アクリル容器＋セロハン'],['B','B ろ紙＋セロハン']])+ctl('',btn('assemble','教科書の順に組み立てる'))+ctl('',btn('connect','モーターをつなぐ'))+`<div class="readout">${meter('モーター','dmotor','停止')}${meter('極','dpoles','—')}</div>`+ctl('',`<div class="note">硫酸亜鉛水溶液：5%、硫酸銅水溶液：14%。セロハンは2つの液がすぐ混ざるのを防ぎつつ、イオンの移動を可能にします。</div>`);const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);if(method==='A'){beaker(ctx,w*.23,h*.32,w*.54,h*.42,'rgba(35,126,210,.24)');line(ctx,w*.50,h*.34,w*.50,h*.72,'#e3c36c',5);ctx.fillStyle='rgba(170,210,235,.18)';ctx.fillRect(w*.24,h*.49,w*.25,h*.24);txt(ctx,'5% ZnSO₄',w*.36,h*.80,14,'#9fb4c9','center');txt(ctx,'14% CuSO₄',w*.64,h*.80,14,'#9fb4c9','center');if(assembled){rr(ctx,w*.31,h*.27,28,h*.36,3,'#aeb6ba');rr(ctx,w*.66,h*.27,28,h*.36,3,'#ba7046');txt(ctx,'Zn',w*.325,h*.24,14,'#eef7ff','center');txt(ctx,'Cu',w*.675,h*.24,14,'#eef7ff','center')}}else{rr(ctx,w*.18,h*.49,w*.64,55,8,'#c78a5d');rr(ctx,w*.18,h*.57,w*.64,36,4,'rgba(220,245,255,.75)');rr(ctx,w*.18,h*.63,w*.64,36,4,'rgba(190,220,235,.75)');rr(ctx,w*.18,h*.69,w*.64,55,8,'#aeb6ba');txt(ctx,'Cu板',w*.12,h*.53,14,'#9fb4c9','right');txt(ctx,'CuSO₄で湿らせたろ紙',w*.50,h*.60,13,'#0a1720','center');txt(ctx,'セロハン',w*.50,h*.66,13,'#0a1720','center');txt(ctx,'ZnSO₄で湿らせたろ紙',w*.50,h*.72,13,'#0a1720','center');txt(ctx,'Zn板',w*.12,h*.74,14,'#9fb4c9','right')}if(assembled){line(ctx,w*.32,h*.26,w*.32,110,'#111',4);line(ctx,w*.68,h*.26,w*.68,110,'#e04949',4);circ(ctx,w*.50,110,50,connected?'#64e2c4':'#263543','#72808a');for(let i=0;i<3;i++){ctx.save();ctx.translate(w*.50,110);ctx.rotate((connected?t/30:0)+i*2.09);rr(ctx,-4,-43,8,38,3,connected?'#7effcf':'#677781');ctx.restore()}}if(connected){for(let i=0;i<8;i++)circ(ctx,w*.32+((t+i*50)%300)/300*w*.36,105,4,'#64e2c4');txt(ctx,'電子：亜鉛 → 銅',w*.50,175,14,'#64e2c4','center')}dmotor.textContent=connected?'回転':'停止';dpoles.textContent=assembled?'Zn − / Cu ＋':'—'}function loop(){if(connected)t++;draw();raf=requestAnimationFrame(loop)}method.onchange=()=>{method=el('#method').value;assembled=connected=false;draw()};assemble.onclick=()=>{assembled=true;setStatus('組み立て完了',true)};connect.onclick=()=>{if(!assembled){setStatus('先に組み立てる');return}connected=!connected;connect.textContent=connected?'モーターを外す':'モーターをつなぐ';setStatus(connected?'発電中':'回路を開いた',connected)};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
+daniel(){
+  let method='A',step=0,connected='',reverse=false,t=0,raf;
+  const stepsA=['セロハンをアクリル容器にOリングで固定','容器内に14%硫酸銅水溶液40 cm³','ビーカー側に5%硫酸亜鉛水溶液40 cm³','Cu板をCuSO₄、Zn板をZnSO₄に差し込む'];
+  const stepsB=['Cu板上にCuSO₄で湿らせたろ紙','その上にセロハン','ZnSO₄で湿らせたろ紙を重ねる','Zn板を重ね、クリップで固定'];
+  controls.innerHTML=
+    select('method','教科書の方法',[['A','A アクリル容器＋セロハン'],['B','B ろ紙＋セロハン']])+
+    ctl('組み立て',`<div id="dsteps" class="steps"></div><div style="height:8px"></div>${btn('dnext','次の操作')}</div>`)+
+    ctl('電気エネルギーを取り出す',
+      buttons(btn('music','電子オルゴールをつなぐ'),btn('motor','プロペラモーターをつなぐ','secondary'))
+    )+
+    ctl('',buttons(btn('reverse','＋−を逆につなぐ','secondary'),btn('disconnect','外す','secondary')))+
+    `<div class="readout">${meter('回路','dcircuit','未接続')}${meter('極','dpoles','—')}</div>`+
+    ctl('',`<div class="note">電子オルゴールは＋極と−極を正しくつながないと鳴りません。長くつなぐと、亜鉛板はぼろぼろになり、銅板には新しい銅が付着します。</div>`);
+  const {c,ctx,off}=canvas();
+
+  function listSteps(){
+    const arr=method==='A'?stepsA:stepsB;
+    dsteps.innerHTML=arr.map((x,i)=>`<div class="step ${i<step?'done':''}">${i+1}. ${x}</div>`).join('');
+    dnext.disabled=step>=arr.length;
+  }
+  function assembled(){return step>=(method==='A'?stepsA.length:stepsB.length)}
+
+  function draw(){
+    const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);
+    txt(ctx,'ダニエル電池',w/2,44,22,'#eef7ff','center');
+
+    if(method==='A'){
+      // beaker and inner acrylic container
+      beaker(ctx,w*.24,h*.31,w*.52,h*.43,'rgba(168,210,235,.14)');
+      rr(ctx,w*.48,h*.34,w*.22,h*.34,10,'rgba(45,126,210,.23)','#a8c0d0');
+      if(step>=1){line(ctx,w*.48,h*.34,w*.48,h*.68,'#e8c86b',5);txt(ctx,'セロハン',w*.50,h*.72,12,'#e8c86b','center')}
+      if(step>=2){ctx.fillStyle='rgba(35,126,210,.30)';ctx.fillRect(w*.50,h*.47,w*.18,h*.19);txt(ctx,'14% CuSO₄',w*.59,h*.80,13,'#9fb4c9','center')}
+      if(step>=3){ctx.fillStyle='rgba(195,220,235,.20)';ctx.fillRect(w*.27,h*.47,w*.19,h*.19);txt(ctx,'5% ZnSO₄',w*.36,h*.80,13,'#9fb4c9','center')}
+      if(step>=4){rr(ctx,w*.31,h*.28,26,h*.37,3,'#aeb6ba');rr(ctx,w*.62,h*.28,26,h*.37,3,'#b86c43');txt(ctx,'Zn',w*.323,h*.24,13,'#eef7ff','center');txt(ctx,'Cu',w*.633,h*.24,13,'#eef7ff','center')}
+    }else{
+      // stacked paper method
+      rr(ctx,w*.20,h*.60,w*.60,48,8,'#b87045'); if(step>=1)rr(ctx,w*.20,h*.54,w*.60,34,3,'rgba(65,135,210,.72)');
+      if(step>=2)rr(ctx,w*.20,h*.48,w*.60,26,3,'rgba(235,245,250,.82)');
+      if(step>=3)rr(ctx,w*.20,h*.42,w*.60,34,3,'rgba(210,225,235,.82)');
+      if(step>=4)rr(ctx,w*.20,h*.34,w*.60,48,8,'#aeb6ba');
+      txt(ctx,'Cu板',w*.12,h*.63,12,'#9fb4c9','right');txt(ctx,'Zn板',w*.12,h*.38,12,'#9fb4c9','right');
+    }
+
+    if(assembled()){
+      const zx=method==='A'?w*.323:w*.32,cx=method==='A'?w*.633:w*.68;
+      line(ctx,zx,h*.28,zx,105,'#111',4); line(ctx,cx,h*.28,cx,105,'#e04c4c',4);
+      if(connected){
+        const devX=w*.50,devY=105;
+        circ(ctx,devX,devY,48,connected==='music'?'#1c2832':'#263642','#75838d');
+        if(connected==='music'){txt(ctx,reverse?'…':'♪',devX,devY+10,34,reverse?'#788894':'#ffd36a','center')}
+        else{
+          for(let i=0;i<3;i++){ctx.save();ctx.translate(devX,devY);ctx.rotate((reverse?-1:1)*t/22+i*2.09);rr(ctx,-4,-42,8,37,3,'#64e2c4');ctx.restore()}
+        }
+        for(let i=0;i<8;i++) circ(ctx,zx+((t+i*45)%300)/300*(cx-zx),100,4,'#64e2c4');
+        txt(ctx,'電子：Zn → Cu',w*.50,170,13,'#64e2c4','center');
+        if(t>250){
+          // electrode changes
+          for(let i=0;i<10;i++)circ(ctx,zx-6+(i%3)*6,h*.58+(i%4)*10,2,'#7d8588');
+          for(let i=0;i<12;i++)circ(ctx,cx-8+(i%4)*5,h*.52+(i%5)*9,2.2,'#d2875a');
+        }
+      }
+    }
+
+    dcircuit.textContent=!connected?'未接続':connected==='music'?(reverse?'鳴らない':'オルゴールが鳴る'):'モーター回転';
+    dpoles.textContent=assembled()?'Zn − / Cu ＋':'—';
+  }
+
+  function loop(){if(connected)t++;draw();raf=requestAnimationFrame(loop)}
+  method.onchange=()=>{method=method.value;step=0;connected='';reverse=false;t=0;listSteps();draw()};
+  dnext.onclick=()=>{step++;listSteps();setStatus(assembled()?'電池完成':'組み立て中',assembled());draw()};
+  music.onclick=()=>{if(!assembled()){setStatus('先に電池を完成させる');return}connected='music';t=0;setStatus(reverse?'極性が逆で鳴らない':'電子オルゴールが鳴った',!reverse)};
+  motor.onclick=()=>{if(!assembled()){setStatus('先に電池を完成させる');return}connected='motor';t=0;setStatus('モーター回転',true)};
+  reverse.onclick=()=>{reverse=!reverse;setStatus(reverse?'＋−を逆につないだ':'正しい極性に戻した');draw()};
+  disconnect.onclick=()=>{connected='';setStatus('回路を外した');draw()};
+  listSteps();raf=requestAnimationFrame(loop);
+  return()=>{cancelAnimationFrame(raf);off()}
+},
 acidprop(){const liquids={hcl:{n:'2.5%塩酸',type:'acid',ph:1.2},h2so4:{n:'2.5%硫酸',type:'acid',ph:1},acetic:{n:'2.5%酢酸',type:'acid',ph:2.5},naoh:{n:'2.5%水酸化Na',type:'base',ph:13},baoh:{n:'2.5%水酸化Ba',type:'base',ph:12.5},nh3:{n:'2.5%アンモニア水',type:'base',ph:11.5}};let liq='hcl',test='BTB',obs='';controls.innerHTML=select('aliq','水溶液',Object.entries(liquids).map(([k,v])=>[k,v.n]))+select('atest','試すもの',[['BTB','BTB溶液'],['PP','フェノールフタレイン'],['PH','pH試験紙'],['Mg','マグネシウムリボン']])+ctl('',btn('atestBtn','試す'))+`<div class="readout">${meter('観察','aobs','—')}${meter('pH','aph','—')}</div>`;const {c,ctx,off}=canvas();function color(v){if(test==='BTB')return v.type==='acid'?'#f3d85c':'#3c7edb';if(test==='PP')return v.type==='base'?'#ee5f9a':'rgba(220,235,245,.2)';if(test==='PH'){const hue=240-(v.ph/14)*240;return `hsl(${hue} 70% 55%)`}return 'rgba(150,190,220,.2)'}function draw(){const w=W(c),h=H(c),v=liquids[liq];ctx.clearRect(0,0,w,h);txt(ctx,'マイクロプレートで性質を比較',w/2,62,22,'#eef7ff','center');for(let i=0;i<4;i++)for(let j=0;j<3;j++)circ(ctx,w*.30+j*w*.20,h*.30+i*h*.15,42,'rgba(180,210,230,.08)','#8197a7');const x=w*.50,y=h*.45;circ(ctx,x,y,46,obs?color(v):'rgba(180,210,230,.1)','#9ab0bf');if(obs&&test==='Mg'&&v.type==='acid')for(let i=0;i<16;i++)circ(ctx,x-20+(i*17%40),y+22-(i*19%70),3,'rgba(255,255,255,.75)');txt(ctx,v.n,w/2,h*.83,17,'#eef7ff','center');txt(ctx,test==='Mg'?'マグネシウムリボン':test,w/2,h*.88,14,'#9fb4c9','center');aobs.textContent=obs||'—';aph.textContent=obs?String(v.ph):'—'}aliq.onchange=()=>{liq=aliq.value;obs='';draw()};atest.onchange=()=>{test=atest.value;obs='';draw()};atestBtn.onclick=()=>{const v=liquids[liq];if(test==='BTB')obs=v.type==='acid'?'黄色':'青色';if(test==='PP')obs=v.type==='base'?'赤色':'無色';if(test==='PH')obs=v.type==='acid'?'酸性の色':'アルカリ性の色';if(test==='Mg')obs=v.type==='acid'?'気体が発生':'ほぼ変化なし';setStatus('観察中',true);draw()};draw();return off},
 ionmove(){let kind='hcl',on=false,t=0,raf;controls.innerHTML=select('ikind','中央にしみこませる液',[['hcl','2.5%塩酸'],['naoh','2.5%水酸化ナトリウム水溶液']])+ctl('',btn('ionPower','9 Vを加える'))+ctl('',`<div class="note">pH試験紙とろ紙は2%硝酸カリウム水溶液で湿らせ、両端をクリップで電源につなぎます。</div>`)+`<div class="readout">${meter('色の広がり','idir','中央')}${meter('示す粒子','ionR','—')}</div>`;const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);rr(ctx,w*.12,h*.40,w*.76,90,8,'#e5d49a','#b4aa84');txt(ctx,'陰極 −',w*.12,h*.34,16,'#72a7ff','center');txt(ctx,'陽極 ＋',w*.88,h*.34,16,'#ff7e8e','center');line(ctx,w*.12,h*.37,w*.12,h*.48,'#111',14);line(ctx,w*.88,h*.37,w*.88,h*.48,'#df4a4a',14);const max=w*.31*Math.min(1,t/300),cx=w*.50;ctx.fillStyle=kind==='hcl'?'rgba(235,80,75,.75)':'rgba(65,105,220,.7)';if(kind==='hcl')ctx.fillRect(cx-max,h*.40,max,90);else ctx.fillRect(cx,h*.40,max,90);txt(ctx,kind==='hcl'?'塩酸':'NaOH',cx,h*.56,15,'#0b1720','center');idir.textContent=t<10?'中央':kind==='hcl'?'陰極側へ':'陽極側へ';ionR.textContent=t<10?'—':kind==='hcl'?'H⁺':'OH⁻'}function loop(){if(on)t+=1;draw();raf=requestAnimationFrame(loop)}ikind.onchange=()=>{kind=ikind.value;t=0;draw()};ionPower.onclick=()=>{on=!on;ionPower.textContent=on?'電源を切る':'9 Vを加える';setStatus(on?'通電中':'停止',on)};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
-neutral(){let measured=false,pp=0,acid=0,slide=false,evap=0,raf;controls.innerHTML=ctl('',btn('measure','NaOH 10 cm³を量り取る'))+ctl('',btn('pp','フェノールフタレインを3滴'))+ctl('',buttons(btn('acidDrop','塩酸を1滴加える'),btn('acidSlow','塩酸を少量加える','secondary')))+ctl('',buttons(btn('toSlide','液をスライドガラスへ','secondary'),btn('evaporate','水を蒸発させる','secondary')))+`<div class="readout">${meter('塩酸','acidVol','0.00 mL')}${meter('状態','neutralR','準備')}</div>`;const {c,ctx,off}=canvas();const endpoint=9.12;function draw(){const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);if(!slide){beaker(ctx,w*.31,h*.32,w*.38,h*.40,measured?(pp&&acid<endpoint?'rgba(235,80,150,.42)':'rgba(180,210,230,.16)'):'rgba(0,0,0,0)');line(ctx,w*.50,h*.10,w*.50,h*.42,'#bfcbd2',5);txt(ctx,'ガラス棒',w*.56,h*.16,13,'#9fb4c9');txt(ctx,measured?'NaOH水溶液 10 cm³':'メスシリンダーで量り取る',w*.50,h*.82,16,'#eef7ff','center');if(pp)txt(ctx,'フェノールフタレイン',w*.50,h*.87,13,'#9fb4c9','center');if(acid>=endpoint)txt(ctx,'赤色が消えた',w*.50,h*.25,18,'#64e2c4','center')}else{rr(ctx,w*.20,h*.52,w*.60,24,4,'rgba(210,235,255,.45)','#b6c8d3');if(evap<100){circ(ctx,w*.50,h*.50,30-evap*.12,'rgba(160,205,235,.4)');for(let i=0;i<5;i++)txt(ctx,'~',w*.44+i*22,h*.43-(evap%20),18,'rgba(255,255,255,.35)')}else{for(let i=0;i<16;i++){ctx.save();ctx.translate(w*.44+(i%4)*30,h*.47+Math.floor(i/4)*16);ctx.rotate((i%3)*.7);rr(ctx,-9,-2,18,4,1,'#e7e2d5');ctx.restore()}txt(ctx,'結晶が現れた',w*.50,h*.38,18,'#64e2c4','center')}}acidVol.textContent=acid.toFixed(2)+' mL';neutralR.textContent=!measured?'準備':!pp?'指示薬なし':acid<endpoint?'赤色':!slide?'無色':evap<100?'蒸発中':'結晶'}function loop(){if(slide&&evap>0&&evap<100)evap+=.15;draw();raf=requestAnimationFrame(loop)}measure.onclick=()=>{measured=true;setStatus('10 cm³量り取った',true)};pp.onclick=()=>{if(!measured)return setStatus('先にNaOHを量る');pp=3;setStatus('赤色になった',true)};acidDrop.onclick=()=>{if(!pp)return setStatus('先に指示薬を入れる');acid=Math.min(endpoint+.5,acid+.05);setStatus(acid>=endpoint?'赤色が消えた':'1滴ずつ加える',true)};acidSlow.onclick=()=>{if(!pp)return;acid=Math.min(endpoint+.5,acid+.5)};toSlide.onclick=()=>{if(acid<endpoint)return setStatus('赤色が消えるまで塩酸を加える');slide=true;setStatus('スライドガラスへ移した')};evaporate.onclick=()=>{if(!slide)return;evap=1;setStatus('水を蒸発中',true)};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
+neutral(){
+  let measured=false,pp=0,acidDrops=0,slide=false,evap=0,microscope=false,raf;
+  const endpointDrops=22;
+  controls.innerHTML=
+    ctl('1. アルカリを量る',btn('measure','メスシリンダーでNaOH 10 cm³を量る'))+
+    ctl('2. 指示薬',btn('pp','フェノールフタレインを2〜3滴'))+
+    ctl('3. 塩酸を少しずつ加える',
+      buttons(btn('acidDrop','塩酸を1滴'),btn('stir','ガラス棒でかき混ぜる','secondary'))
+    )+
+    ctl('4. 水を蒸発させる',
+      buttons(btn('toSlide','一部をスライドガラスへ','secondary'),btn('evaporate','水を蒸発させる','secondary'))
+    )+
+    ctl('',btn('microscope','出てきた物質を顕微鏡で見る','secondary'))+
+    `<div class="readout">${meter('塩酸','acidVol','0滴')}${meter('状態','neutralR','準備')}</div>`+
+    ctl('',`<div class="note">赤色が消えそうになったら、塩酸を1滴加えるたびにガラス棒でかき混ぜます。赤色が消えたら、その液の一部をスライドガラスに取り、水を蒸発させます。</div>`);
+  const {c,ctx,off}=canvas();
+  let stirredAt=-1;
+
+  function redStrength(){
+    if(!measured||!pp) return 0;
+    return Math.max(0,1-acidDrops/endpointDrops);
+  }
+
+  function draw(){
+    const w=W(c),h=H(c);ctx.clearRect(0,0,w,h);
+    txt(ctx,'酸とアルカリを混ぜたときの変化',w/2,45,21,'#eef7ff','center');
+
+    if(!slide){
+      // beaker
+      beaker(ctx,w*.32,h*.33,w*.36,h*.39, measured ? `rgba(235,80,150,${.12+.45*redStrength()})` : 'rgba(0,0,0,0)');
+      txt(ctx,measured?'NaOH水溶液 10 cm³':'まだ入っていない',w*.50,h*.80,15,'#eef7ff','center');
+      // phenolphthalein bottle
+      rr(ctx,w*.12,h*.28,48,74,8,'#6a3b25','#a26647');rr(ctx,w*.18,h*.25,20,22,4,'#c43b32');
+      txt(ctx,'フェノール',w*.145,h*.42,10,'#eef7ff','center');txt(ctx,'フタレイン',w*.145,h*.45,10,'#eef7ff','center');
+      // acid dropper
+      line(ctx,w*.76,h*.20,w*.63,h*.43,'#c5d7e2',7);circ(ctx,w*.77,h*.18,13,'#8b99a1');
+      txt(ctx,'塩酸',w*.79,h*.28,13,'#9fb4c9','center');
+      // glass rod
+      line(ctx,w*.55,h*.22,w*.49,h*.63,'#bfcbd2',5);txt(ctx,'ガラス棒',w*.59,h*.20,12,'#9fb4c9');
+      if(pp&&acidDrops===0)txt(ctx,'赤色',w*.50,h*.27,17,'#ff7fb0','center');
+      if(pp&&acidDrops>0&&acidDrops<endpointDrops)txt(ctx,redStrength()<.25?'うすい赤色':'赤色',w*.50,h*.27,17,'#ff7fb0','center');
+      if(acidDrops>=endpointDrops)txt(ctx,'赤色が消えた',w*.50,h*.27,18,'#64e2c4','center');
+      if(acidDrops>stirredAt&&redStrength()<.30&&acidDrops<endpointDrops)txt(ctx,'1滴ごとにかき混ぜる',w*.50,h*.89,13,'#ffd36a','center');
+    } else if(!microscope){
+      // slide glass evaporation
+      rr(ctx,w*.18,h*.56,w*.64,24,3,'rgba(215,238,250,.46)','#b7c8d2');
+      if(evap<100){
+        const r=Math.max(8,34-evap*.25);circ(ctx,w*.50,h*.54,r,'rgba(160,205,235,.42)');
+        for(let i=0;i<5;i++)txt(ctx,'~',w*.44+i*22,h*.45-(evap%18),18,'rgba(255,255,255,.35)');
+        txt(ctx,'水を蒸発中',w*.50,h*.38,16,'#9fb4c9','center');
+      } else {
+        for(let i=0;i<20;i++){
+          ctx.save();ctx.translate(w*.42+(i%5)*32,h*.50+Math.floor(i/5)*13);ctx.rotate((i%4)*.55);rr(ctx,-9,-2,18,4,1,'#e9e5d6');ctx.restore();
+        }
+        txt(ctx,'白い結晶状の物質',w*.50,h*.38,17,'#64e2c4','center');
+      }
+    } else {
+      const cx=w/2,cy=h*.50,r=Math.min(w,h)*.33;
+      ctx.fillStyle='#f6f0dc';ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
+      ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.clip();
+      for(let i=0;i<28;i++){
+        const x=cx-r+30+(i*73%(r*2-60)),y=cy-r+25+(i*47%(r*2-50));
+        ctx.save();ctx.translate(x,y);ctx.rotate((i%7)*.45);rr(ctx,-15,-3,30,6,1,'#e7e1c8','#c9c1a8');ctx.restore();
+      }
+      ctx.restore();ctx.strokeStyle='#d7e7f2';ctx.lineWidth=7;ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke();
+      txt(ctx,'顕微鏡で結晶を観察',cx,h*.90,15,'#64e2c4','center');
+    }
+
+    acidVol.textContent=acidDrops+'滴';
+    neutralR.textContent=!measured?'準備':!pp?'無色':acidDrops<endpointDrops?'赤色':!slide?'無色':evap<100?'蒸発中':'結晶';
+  }
+
+  function loop(){if(slide&&evap>0&&evap<100)evap+=.22;draw();raf=requestAnimationFrame(loop)}
+  measure.onclick=()=>{measured=true;setStatus('NaOH 10 cm³を量り取った',true)};
+  pp.onclick=()=>{if(!measured){setStatus('先にNaOHを10 cm³量る');return}pp=3;setStatus('赤色になった',true)};
+  acidDrop.onclick=()=>{
+    if(!pp){setStatus('先にフェノールフタレインを加える');return}
+    if(acidDrops>=endpointDrops){setStatus('赤色はすでに消えている');return}
+    acidDrops++;
+    if(acidDrops>=endpointDrops)setStatus('赤色が消えた',true);
+    else if(redStrength()<.30)setStatus('赤色がうすい。1滴ごとにかき混ぜる');
+    else setStatus('塩酸を少しずつ加えた',true);
+  };
+  stir.onclick=()=>{if(acidDrops===0){setStatus('まだ塩酸を加えていない');return}stirredAt=acidDrops;setStatus('ガラス棒でかき混ぜた',true)};
+  toSlide.onclick=()=>{if(acidDrops<endpointDrops){setStatus('赤色が消えるまで塩酸を加える');return}slide=true;setStatus('一部をスライドガラスへ移した')};
+  evaporate.onclick=()=>{if(!slide){setStatus('先に液をスライドガラスへ');return}evap=1;setStatus('水を蒸発させている',true)};
+  microscope.onclick=()=>{if(evap<100){setStatus('物質が出てくるまで水を蒸発させる');return}microscope=true;setStatus('顕微鏡で観察中',true)};
+  raf=requestAnimationFrame(loop);
+  return()=>{cancelAnimationFrame(raf);off()}
+},
 buoyancy(){let mass=100,depth=0;controls.innerHTML=range('bmass','おもり',50,200,50,100,' g')+range('depth','水への沈み方',0,100,1,0,'%')+`<div class="readout">${meter('ばねばかり','springR','0.98 N')}${meter('浮力','buoyR','0.00 N')}</div>`+ctl('',`<div class="note">0〜50%は一部が水中。50%以上で全体が水中に入った後は、さらに深くしても浮力は変わりません。</div>`);const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c),weight=mass/1000*9.8,frac=Math.min(1,depth/50),volume=(mass/7800),buoy=1000*9.8*volume*frac,reading=Math.max(0,weight-buoy);ctx.clearRect(0,0,w,h);line(ctx,w*.50,60,w*.50,h*.28,'#d8e5ee',5);rr(ctx,w*.45,85,w*.10,120,12,'#eef2e5','#7c8a96');for(let i=0;i<10;i++)line(ctx,w*.46,100+i*9,w*.48,100+i*9,'#4b5964',1);txt(ctx,reading.toFixed(2)+' N',w*.50,160,14,'#27333b','center');beaker(ctx,w*.29,h*.47,w*.42,h*.38,'rgba(78,153,214,.3)');const waterY=h*.60,top=waterY-45+(1-depth/100)*150;rr(ctx,w*.46,top,70,70,5,'#a3aaad');line(ctx,w*.50,h*.28,w*.50,top,'#d6dde2',2);txt(ctx,`${mass} g`,w*.495,top+42,14,'#152029','center');springR.textContent=reading.toFixed(2)+' N';buoyR.textContent=buoy.toFixed(2)+' N'}el('#bmass').oninput=()=>{mass=+el('#bmass').value;el('#bmassVal').textContent=mass+' g';draw()};el('#depth').oninput=()=>{depth=+el('#depth').value;el('#depthVal').textContent=depth+'%';draw()};draw();return off},
 vectors(){let angle=60,weight=1;controls.innerHTML=range('vangle','2本のばねばかりの間の角度',20,140,5,60,'°')+range('vweight','おもりにはたらく力',.5,2,.1,1,' N')+`<div class="readout">${meter('ばねばかり F₁','f1R','0.58 N')}${meter('ばねばかり F₂','f2R','0.58 N')}</div>`+ctl('',`<div class="note">リングが点Oに重なるように、左右のばねばかりで対称に引いた場合を再現します。1本で引くと合力はおもりを引く力と同じになります。</div>`);const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c),cx=w*.54,cy=h*.52,a=angle*Math.PI/180/2,F=weight/(2*Math.cos(a));ctx.clearRect(0,0,w,h);rr(ctx,w*.14,h*.18,w*.72,h*.64,15,'#a9885d','#c5aa7e');rr(ctx,w*.18,h*.22,w*.64,h*.56,8,'#efe8d8');circ(ctx,cx,cy,11,'none','#333');txt(ctx,'O',cx,cy+4,12,'#222','center');const len=180;const x1=cx+Math.sin(a)*len,y1=cy-Math.cos(a)*len,x2=cx-Math.sin(a)*len,y2=y1;line(ctx,cx,cy,x1,y1,'#e05252',5);line(ctx,cx,cy,x2,y2,'#72a7ff',5);line(ctx,cx,cy,cx,cy+180,'#3a4147',4);circ(ctx,cx,cy+190,24,'#9aa4aa');txt(ctx,'F₁',x1,y1-10,15,'#ff7e8e','center');txt(ctx,'F₂',x2,y2-10,15,'#72a7ff','center');txt(ctx,`${weight.toFixed(1)} N`,cx,cy+235,15,'#9fb4c9','center');f1R.textContent=F.toFixed(2)+' N';f2R.textContent=F.toFixed(2)+' N'}el('#vangle').oninput=()=>{angle=+el('#vangle').value;el('#vangleVal').textContent=angle+'°';draw()};el('#vweight').oninput=()=>{weight=+el('#vweight').value;el('#vweightVal').textContent=weight+' N';draw()};draw();return off},
-cartforce(){let mass=50,run=false,t=0,dots=[],raf,last=performance.now();controls.innerHTML=range('hang','つるすおもり',50,100,10,50,' g')+select('hz','記録タイマー',[['60','西日本 60 Hz'],['50','東日本 50 Hz']])+ctl('',buttons(btn('cartStart','記録開始'),btn('cartReset','リセット','secondary')))+`<div class="readout">${meter('経過','ctR','0.00 s')}${meter('速さ','cvR','0.00 m/s')}</div>`;const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c),a=(mass/1000*9.8)/(.50+mass/1000),x=Math.min(w*.18+.5*a*t*t*90,w*.72);ctx.clearRect(0,0,w,h);line(ctx,w*.10,h*.61,w*.82,h*.61,'#a98761',18);rr(ctx,x,h*.52,100,48,8,'#64e2c4');circ(ctx,x+22,h*.61,12,'#18232b');circ(ctx,x+78,h*.61,12,'#18232b');circ(ctx,w*.83,h*.56,28,'none','#abb9c3');line(ctx,w*.83,h*.56,w*.83,h*.80,'#d6dde2',3);rr(ctx,w*.81,h*.79,40,45,4,'#aab2b7');line(ctx,x+100,h*.55,w*.83,h*.56,'#d6dde2',2);txt(ctx,'記録タイマー',w*.12,h*.43,14,'#9fb4c9');dots.forEach((d,i)=>circ(ctx,w*.12+d*70,h*.30,2.5,'#ffd36a'));ctR.textContent=t.toFixed(2)+' s';cvR.textContent=(a*t).toFixed(2)+' m/s'}function loop(now){const dt=Math.min(.03,(now-last)/1000);last=now;if(run){const old=t;t+=dt;const hz=+el('#hz').value,step=1/hz;let k=Math.floor(old/step)+1;while(k*step<=t){const tt=k*step,a=(mass/1000*9.8)/(.50+mass/1000);dots.push(.5*a*tt*tt);k++}if(t>1.3)run=false}draw();raf=requestAnimationFrame(loop)}el('#hang').oninput=()=>{mass=+el('#hang').value;el('#hangVal').textContent=mass+' g'};cartStart.onclick=()=>{run=!run;last=performance.now();cartStart.textContent=run?'一時停止':'記録開始';setStatus(run?'記録中':'停止',run)};cartReset.onclick=()=>{run=false;t=0;dots=[];cartStart.textContent='記録開始';setStatus('準備')};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
+cartforce(){
+  let mass=50,setup=0,run=false,t=0,dots=[],segments=[],raf,last=performance.now();
+  const cartMass=.50;
+  controls.innerHTML=
+    range('hang','つるすおもり',50,100,10,50,' g')+
+    select('hz','記録タイマー',[['60','西日本 60 Hz（0.1秒＝6打点）'],['50','東日本 50 Hz（0.1秒＝5打点）']])+
+    ctl('装置を組み立てる',
+      `<div id="csteps" class="steps"></div><div style="height:8px"></div>${btn('cnext','次の操作')}</div>`
+    )+
+    ctl('記録',buttons(btn('cartStart','記録タイマーON→台車を放す'),btn('cartStop','滑車の前で止める','secondary')))+
+    ctl('記録テープを処理',buttons(btn('cutTape','0.1秒ごとに切る','secondary'),btn('cartReset','リセット','secondary')))+
+    `<div class="readout">${meter('経過時間','ctR','0.00 s')}${meter('台車の速さ','cvR','0.00 m/s')}</div>`+
+    ctl('',`<div class="note">教科書の手順どおり、テープを記録タイマーに通して台車につけ、糸をクランプ付き滑車にかけておもりをつるします。西日本60 Hzでは0.1秒ごとに6打点ずつ切ります。</div>`);
+  const {c,ctx,off}=canvas();
+  const cstepsText=['記録テープを水平面に固定した記録タイマーへ通す','テープを力学台車に取りつける','台車の糸をクランプ付き滑車にかける','糸の先におもりをつるす'];
+
+  function stepList(){
+    csteps.innerHTML=cstepsText.map((x,i)=>`<div class="step ${i<setup?'done':''}">${i+1}. ${x}</div>`).join('');
+    cnext.disabled=setup>=4;
+  }
+  function acceleration(){const mh=mass/1000;return (mh*9.8)/(cartMass+mh)}
+
+  function draw(){
+    const w=W(c),h=H(c),a=acceleration();
+    const x=Math.min(w*.23+.5*a*t*t*105,w*.70);
+    ctx.clearRect(0,0,w,h);
+    txt(ctx,'水平面上で一定の力を受ける台車',w/2,44,21,'#eef7ff','center');
+
+    // bench, timer, tape
+    line(ctx,w*.09,h*.60,w*.84,h*.60,'#a67b54',18);
+    rr(ctx,w*.10,h*.45,86,75,8,'#bfc6c9','#75838b');txt(ctx,'記録',w*.145,h*.49,12,'#26343d','center');txt(ctx,'タイマー',w*.145,h*.52,12,'#26343d','center');
+    if(setup>=1){line(ctx,w*.12,h*.34,x+18,h*.34,'#f4f0df',10);txt(ctx,'記録テープ',w*.18,h*.29,12,'#9fb4c9','center')}
+
+    // cart
+    rr(ctx,x,h*.50,92,40,6,'#62e6c7');circ(ctx,x+20,h*.59,11,'#18232b');circ(ctx,x+72,h*.59,11,'#18232b');txt(ctx,'力学台車',x+46,h*.48,12,'#eef7ff','center');
+
+    // pulley and hanging mass
+    if(setup>=3){circ(ctx,w*.83,h*.54,28,'rgba(0,0,0,0)','#acb9c3');line(ctx,x+92,h*.53,w*.83,h*.54,'#d7dde2',2)}
+    if(setup>=4){line(ctx,w*.83,h*.54,w*.83,h*.79,'#d7dde2',2);rr(ctx,w*.805,h*.78,50,42,4,'#aeb5ba');txt(ctx,mass+' g',w*.83,h*.85,12,'#17212a','center')}
+
+    // tape dots: true timer spacing
+    if(dots.length){
+      const baseY=h*.26;
+      dots.forEach((d,i)=>circ(ctx,w*.11+Math.min(d*88,w*.70),baseY,2.3,'#ffd36a'));
+      txt(ctx,el('#hz').value==='60'?'60 Hz：6打点で0.1秒':'50 Hz：5打点で0.1秒',w*.46,h*.20,13,'#9fb4c9','center');
+    }
+
+    // cut segments / bar-like placement
+    if(segments.length){
+      const y0=h*.73,scale=55;
+      segments.forEach((len,i)=>{
+        const yy=y0+i*24;
+        line(ctx,w*.16,yy,w*.16+len*scale,yy,'#f1e8ce',10);
+        txt(ctx,`${(i*.1).toFixed(1)}〜${((i+1)*.1).toFixed(1)} s`,w*.14,yy+4,10,'#9fb4c9','right');
+      });
+      txt(ctx,'0.1秒ごとのテープを左端をそろえて並べる',w*.55,h*.95,12,'#64e2c4','center');
+    }
+
+    ctR.textContent=t.toFixed(2)+' s';
+    cvR.textContent=(a*t).toFixed(2)+' m/s';
+  }
+
+  function loop(now){
+    const dt=Math.min(.03,(now-last)/1000);last=now;
+    if(run&&setup>=4){
+      const old=t;t+=dt;const hz=+el('#hz').value,step=1/hz;
+      let k=Math.floor(old/step)+1;
+      while(k*step<=t){
+        const tt=k*step;dots.push(.5*acceleration()*tt*tt);k++;
+      }
+      if(t>1.15){run=false;cartStart.textContent='記録タイマーON→台車を放す';setStatus('滑車の直前で停止')}
+    }
+    draw();raf=requestAnimationFrame(loop);
+  }
+
+  cnext.onclick=()=>{setup=Math.min(4,setup+1);stepList();setStatus(setup===4?'装置完成':'組み立て中',setup===4)};
+  el('#hang').oninput=()=>{mass=+el('#hang').value;el('#hangVal').textContent=mass+' g';if(!run){t=0;dots=[];segments=[]}};
+  cartStart.onclick=()=>{
+    if(setup<4){setStatus('先に装置を最後まで組み立てる');return}
+    if(t>0&&!run){t=0;dots=[];segments=[]}
+    run=true;last=performance.now();setStatus('記録タイマーON・台車を放した',true);
+  };
+  cartStop.onclick=()=>{run=false;setStatus('手で台車を止めた')};
+  cutTape.onclick=()=>{
+    if(dots.length<4){setStatus('先に運動を記録する');return}
+    const hz=+el('#hz').value,n=Math.round(hz*.1);
+    segments=[];
+    for(let i=0;i+n<dots.length;i+=n)segments.push(dots[i+n]-dots[i]);
+    setStatus(`0.1秒ごとに${n}打点で切った`,true);
+  };
+  cartReset.onclick=()=>{run=false;t=0;dots=[];segments=[];setup=0;stepList();setStatus('準備')};
+  stepList();raf=requestAnimationFrame(loop);
+  return()=>{cancelAnimationFrame(raf);off()}
+},
 incline(){let ang=10,run=false,t=0,dots=[],raf,last=performance.now();controls.innerHTML=range('iang','斜面の角度',5,25,1,10,'°')+select('ihz','記録タイマー',[['60','西日本 60 Hz'],['50','東日本 50 Hz']])+ctl('',buttons(btn('iStart','台車をはなす'),btn('iReset','リセット','secondary')))+`<div class="readout">${meter('経過','itR','0.00 s')}${meter('速さ','ivR','0.00 m/s')}</div>`;const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c),a=9.8*Math.sin(ang*Math.PI/180),len=w*.64,sx=w*.16,sy=h*.72,dx=len*Math.cos(ang*Math.PI/180),dy=-len*Math.sin(ang*Math.PI/180),dist=Math.min(.5*a*t*t*70,len-80),x=sx+dx-dist*Math.cos(ang*Math.PI/180),y=sy+dy+dist*Math.sin(ang*Math.PI/180);ctx.clearRect(0,0,w,h);line(ctx,sx,sy,sx+dx,sy+dy,'#a98761',18);ctx.save();ctx.translate(x,y-28);ctx.rotate(-ang*Math.PI/180);rr(ctx,-45,-20,90,40,7,'#64e2c4');circ(ctx,-28,22,10,'#17232b');circ(ctx,28,22,10,'#17232b');ctx.restore();txt(ctx,'記録タイマー',w*.08,h*.22,14,'#9fb4c9');dots.forEach(d=>circ(ctx,w*.10+d*45,h*.30,2.5,'#ffd36a'));itR.textContent=t.toFixed(2)+' s';ivR.textContent=(a*t).toFixed(2)+' m/s'}function loop(now){const dt=Math.min(.03,(now-last)/1000);last=now;if(run){const old=t;t+=dt;const hz=+el('#ihz').value,step=1/hz;let k=Math.floor(old/step)+1;while(k*step<=t){const tt=k*step,a=9.8*Math.sin(ang*Math.PI/180);dots.push(.5*a*tt*tt);k++}if(t>1.25)run=false}draw();raf=requestAnimationFrame(loop)}el('#iang').oninput=()=>{ang=+el('#iang').value;el('#iangVal').textContent=ang+'°';t=0;dots=[]};iStart.onclick=()=>{run=!run;last=performance.now();setStatus(run?'記録中':'停止',run)};iReset.onclick=()=>{run=false;t=0;dots=[];setStatus('準備')};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}},
 work(){let mode='direct',pull=0,mass=.5;controls.innerHTML=select('wmode','方法',[['direct','直接持ち上げる'],['pulley','動滑車を使う'],['slope','斜面を使う']])+range('wmass','物体の質量',300,800,100,500,' g')+range('pull','引いた距離',0,50,1,0,' cm')+`<div class="readout">${meter('ばねばかり','wfR','4.90 N')}${meter('仕事','wwR','0.00 J')}</div>`+ctl('',`<div class="note">物体の高さを10 cm上げるところまで比較します。理想化して摩擦は無視しています。</div>`);const {c,ctx,off}=canvas();function vals(){const Wt=mass*9.8;let F,dNeed;if(mode==='direct'){F=Wt;dNeed=.1}else if(mode==='pulley'){F=Wt/2;dNeed=.2}else{dNeed=.4;F=Wt*.1/dNeed}const d=Math.min(pull/100,dNeed),rise=d/dNeed*.1;return{F,dNeed,d,rise}}function draw(){const w=W(c),h=H(c),v=vals();ctx.clearRect(0,0,w,h);line(ctx,w*.12,h*.75,w*.88,h*.75,'#9a7954',14);const y=h*.72-v.rise/.1*h*.35;rr(ctx,w*.46,y-70,90,70,8,'#64e2c4');txt(ctx,mode==='direct'?'直接':mode==='pulley'?'動滑車':'斜面',w*.50,80,22,'#eef7ff','center');if(mode==='pulley'){circ(ctx,w*.51,y-95,30,'none','#b9c8d2');line(ctx,w*.51,y-125,w*.30,160,'#d9e1e6',3);line(ctx,w*.51,y-125,w*.72,160,'#d9e1e6',3)}if(mode==='slope')line(ctx,w*.25,h*.75,w*.72,h*.35,'#a98761',16);line(ctx,w*.51,y-70,w*.80,h*.28,'#d9e1e6',2);txt(ctx,'10 cm',w*.23,h*.56,14,'#9fb4c9');wfR.textContent=v.F.toFixed(2)+' N';wwR.textContent=(v.F*v.d).toFixed(2)+' J'}wmode.onchange=()=>{mode=wmode.value;pull=0;el('#pull').value=0;el('#pullVal').textContent='0 cm';draw()};el('#wmass').oninput=()=>{mass=+el('#wmass').value/1000;el('#wmassVal').textContent=el('#wmass').value+' g';draw()};el('#pull').oninput=()=>{pull=+el('#pull').value;el('#pullVal').textContent=pull+' cm';draw()};draw();return off},
 potential(){let mass=.1,height=.5,dropped=false,depth=0,raf;controls.innerHTML=range('pmass','おもりの質量',50,200,50,100,' g')+range('pheight','落とす高さ',20,100,10,50,' cm')+ctl('',buttons(btn('drop','おもりを落とす'),btn('pReset','くいを戻す','secondary')))+`<div class="readout">${meter('位置エネルギー','peR','0.49 J')}${meter('くいの移動量','stakeR','0 mm')}</div>`;const {c,ctx,off}=canvas();function draw(){const w=W(c),h=H(c),E=mass*9.8*height,target=Math.min(90,E*80);ctx.clearRect(0,0,w,h);line(ctx,w*.50,70,w*.50,h*.38,'#d9e1e6',3);const wy=dropped?h*.39:90+(1-height)*170;rr(ctx,w*.46,wy,70,55,7,'#9ea7ac');txt(ctx,`${Math.round(mass*1000)} g`,w*.495,wy+34,13,'#1a252c','center');ctx.fillStyle='#7a5a37';ctx.fillRect(0,h*.72,w,h*.28);rr(ctx,w*.47,h*.48+depth,55,h*.31-depth,3,'#c79a59');txt(ctx,'くい',w*.495,h*.67+depth/2,13,'#2b241d','center');peR.textContent=E.toFixed(2)+' J';stakeR.textContent=Math.round(depth)+' mm'}function loop(){if(dropped&&depth<Math.min(90,mass*9.8*height*80))depth+=1.1;draw();raf=requestAnimationFrame(loop)}el('#pmass').oninput=()=>{mass=+el('#pmass').value/1000;el('#pmassVal').textContent=el('#pmass').value+' g';dropped=false};el('#pheight').oninput=()=>{height=+el('#pheight').value/100;el('#pheightVal').textContent=el('#pheight').value+' cm';dropped=false};drop.onclick=()=>{dropped=true;setStatus('落下',true)};pReset.onclick=()=>{dropped=false;depth=0;setStatus('準備')};raf=requestAnimationFrame(loop);return()=>{cancelAnimationFrame(raf);off()}}
