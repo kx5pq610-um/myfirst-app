@@ -6,6 +6,7 @@ import {SCHOOL_LEVELS,SCHOOL_TOPICS,curriculumRelation,type SchoolLevel,type Obs
 import {EarLab,GlucoseLab,LiverStructureLab,DigestiveLab,MovementLab,ImmuneLab} from './school-labs';
 import './school-learning.css';
 import {HeartLab,EyeLab} from './organ-labs';
+import MiddleSenses from './middle-senses';
 
 export type LessonId='heart'|'blood'|'respiratory'|'urinary'|'liver'|'eye'|'nervous'|'ear'|'digestive'|'movement'|'homeostasis'|'immune';
 
@@ -62,7 +63,7 @@ function LiverLesson(){return <div className="lesson-visual"><div className="les
 
 function NervousLesson(){return <div className="lesson-visual"><div className="lesson-visual-head"><span className="visual-label">刺激から反応まで</span><span className="visual-note">神経の情報の流れ</span></div><Route items={['刺激','感覚器官','感覚神経','脳・せきずい','運動神経','筋肉','反応']} accent="gold"/><div className="reflex-card"><b>反射の例：熱いものに触れた</b><p>せきずいを通る短い経路で、脳で考える前に手を引く命令が出ます。</p></div><p className="diagram-caption">高校では、神経系と内分泌系が体内環境を保つ調節にも関わることへ学びを広げます。</p></div>}
 
-function Visual({id,level}:{id:LessonId;level:SchoolLevel}){if(id==='ear')return <EarLab level={level}/>;if(id==='digestive')return <DigestiveLab/>;if(id==='movement')return <MovementLab/>;if(id==='homeostasis')return <GlucoseLab/>;if(id==='immune')return <ImmuneLab/>;if(id==='heart')return <HeartLab/>;if(id==='blood')return <BloodLesson/>;if(id==='respiratory')return <RespiratoryLesson/>;if(id==='urinary')return <UrinaryLesson/>;if(id==='liver')return <LiverLesson/>;if(id==='eye')return <EyeLab advanced={level==='biology'}/>;return <NervousLesson/>;}
+function Visual({id,level}:{id:LessonId;level:SchoolLevel}){if(id==='ear')return <EarLab level={level}/>;if(id==='digestive')return <DigestiveLab/>;if(id==='movement')return <MovementLab/>;if(id==='homeostasis')return <GlucoseLab/>;if(id==='immune')return <ImmuneLab/>;if(id==='heart')return <HeartLab/>;if(id==='blood')return <BloodLesson/>;if(id==='respiratory')return <RespiratoryLesson/>;if(id==='urinary')return <UrinaryLesson/>;if(id==='liver')return <LiverLesson/>;if(id==='eye')return <><EyeLab advanced={level==='biology'}/>{level==='middle'&&<MiddleSenses kind="eye"/>}</>;return <NervousLesson/>;}
 
 export interface LearningPanelProps {open:boolean;lessonId:LessonId;onClose:()=>void;onLessonChange:(id:LessonId)=>void;onFocus:(lesson:Lesson)=>void;onObserve:(lesson:Lesson,observation:Observation)=>void;onModel:(kind:'heart'|'eye')=>void}
 

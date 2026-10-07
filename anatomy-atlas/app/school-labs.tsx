@@ -1,11 +1,13 @@
 import {useState} from 'react';
 import EarHighSchool from './ear-high-school';
+import MiddleSenses from './middle-senses';
 import type {SchoolLevel} from './school-curriculum';
 export function EarLab({level}:{level:SchoolLevel}){
- const [step,setStep]=useState(0);
+ const [step,setStep]=useState(0),[extras,setExtras]=useState(false);
+ const detailed=level==='biology'||extras;
  const stages=[['外耳道','耳介で集めた音が、外耳道を通って鼓膜へ届きます。'],['鼓膜','音によって鼓膜が振動します。'],['耳小骨','3つの小さな骨が振動を内耳へ伝えます。'],['うずまき管（蝸牛）','液体の振動が感覚細胞に伝わり、神経の情報へ変わります。'],['聴神経','神経の情報を脳へ伝えます。'],['脳','届いた情報を処理し、音として感じます。']];
  const color=(i:number)=>step===i?'#c47e17':'#78909b';
- return <section className="organ-lab school-lab"><h4>耳の断面：音から神経の情報へ</h4><p>部位を順に選び、振動が伝わる範囲と神経の情報が伝わる範囲を比べよう。</p>
+ return <section className="organ-lab school-lab"><h4>{level==='middle'?'中学生の耳：つくりと働き':'耳の断面：音から神経の情報へ'}</h4><p>部位を順に選び、振動が伝わる範囲と神経の情報が伝わる範囲を比べよう。</p>
  <svg viewBox="0 0 460 270" className="organ-diagram" role="img" aria-label="耳の断面模式図。外耳道、鼓膜、耳小骨、うずまき管、聴神経、脳の順に情報が伝わる。">
  <rect x="8" y="35" width="174" height="208" rx="15" fill="#e4f1ef"/><rect x="187" y="35" width="93" height="208" rx="15" fill="#f5ecdd"/><rect x="285" y="35" width="167" height="208" rx="15" fill="#e9ecf5"/>
  <g fill="#47616d" fontSize="15" textAnchor="middle"><text x="90" y="25">外耳</text><text x="233" y="25">中耳</text><text x="363" y="25">内耳 → 脳</text></g>
@@ -13,14 +15,17 @@ export function EarLab({level}:{level:SchoolLevel}){
  <path d="M73 139L175 139M75 169L180 169" stroke={color(0)} strokeWidth="8"/><path d="M184 127L193 180" stroke={color(1)} strokeWidth="7"/>
  <path d="M193 143L218 122L239 135L256 148L272 143" fill="none" stroke={color(2)} strokeWidth="7" strokeLinecap="round"/><circle cx="216" cy="123" r="7" fill={color(2)}/><path d="M271 139v20l12-4v-17Z" fill="none" stroke={color(2)} strokeWidth="4"/>
  <path d="M294 149C300 115 352 117 352 152C352 183 309 189 309 157C309 136 335 135 335 153C335 165 321 170 321 157" fill="none" stroke={color(3)} strokeWidth="9" strokeLinecap="round"/>
- <path d="M314 126C275 82 301 55 330 91C354 52 377 82 340 128M325 123C337 68 374 85 346 129" fill="none" stroke="#b6a7c2" strokeWidth="6"/>
+ {detailed&&<path d="M314 126C275 82 301 55 330 91C354 52 377 82 340 128M325 123C337 68 374 85 346 129" fill="none" stroke="#b6a7c2" strokeWidth="6"/>}
  <path d="M350 161L391 161" stroke={color(4)} strokeWidth="10"/><path d="M408 132C391 113 380 147 397 149C383 171 405 182 414 171C439 174 445 143 427 136C425 121 411 121 408 132Z" fill={step===5?'#f2d393':'#c9d5df'} stroke={color(5)} strokeWidth="3"/>
- <path d="M226 168L250 220" stroke="#baa594" strokeWidth="8"/>
- <g fontSize="12" fill="#3e5360" textAnchor="middle"><text x="125" y="112">外耳道</text><text x="174" y="207">鼓膜</text><text x="235" y="105">耳小骨</text><text x="326" y="208">うずまき管</text><text x="373" y="192">聴神経</text><text x="413" y="205">脳</text><text x="349" y="56">三半規管</text><text x="251" y="239">耳管</text></g>
+ {detailed&&<path d="M226 168L250 220" stroke="#baa594" strokeWidth="8"/>}
+ <g fontSize="12" fill="#3e5360" textAnchor="middle"><text x="125" y="112">外耳道</text><text x="174" y="207">鼓膜</text><text x="235" y="105">耳小骨</text><text x="326" y="208">うずまき管</text><text x="373" y="192">聴神経</text><text x="413" y="205">脳</text>{detailed&&<><text x="349" y="56">三半規管</text><text x="251" y="239">耳管</text></>}</g>
  <text x="19" y="256" fontSize="11" fill="#6c7c86">音の振動 → → →　　　　　　神経の情報 →</text>
  </svg>
  <div className="lab-controls school-flow-steps" aria-label="聞こえるまでの経路">{stages.map(([name],i)=><button key={name} aria-pressed={step===i} onClick={()=>setStep(i)}>{i+1}. {name}</button>)}</div>
+ <div className="lab-controls"><button disabled={step===0} onClick={()=>setStep(step-1)}>振動・情報を一つ前へ</button><button disabled={step===5} onClick={()=>setStep(step+1)}>振動・情報を一つ先へ</button>{level==='middle'&&<button aria-pressed={extras} onClick={()=>setExtras(!extras)}>{extras?'基本の部位だけ表示':'発展の部位も表示'}</button>}</div>
+ <p className="middle-signal">{step<3?'この段階では音の振動が伝わる':step===3?'ここで振動が神経の情報に変わる':'この段階では神経の情報が伝わる'}</p>
  <div className="lab-explanation" aria-live="polite"><strong>{stages[step][0]}</strong><p>{stages[step][1]}</p></div>
+ {level==='middle'&&<MiddleSenses kind="ear"/>}
  {level==='biology'&&<EarHighSchool/>}
  <details><summary>発展：耳小骨・耳管・平衡感覚</summary><p>耳小骨は、つち骨・きぬた骨・あぶみ骨です。耳管は中耳とのどをつなぎ、鼓膜の両側の圧力を調節することに関わります。三半規管や前庭は体の動き・傾きを感じる働きに関わります。</p></details>
  <p className="lab-note">位置関係と働きを示す学習用の模式図です。実寸の断面ではありません。内部の耳の部品はBodyParts3Dの収録モデルに含まれていません。</p>
