@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import EarHighSchool from './ear-high-school';
 import type {SchoolLevel} from './school-curriculum';
 export function EarLab({level}:{level:SchoolLevel}){
  const [step,setStep]=useState(0);
@@ -20,7 +21,7 @@ export function EarLab({level}:{level:SchoolLevel}){
  </svg>
  <div className="lab-controls school-flow-steps" aria-label="聞こえるまでの経路">{stages.map(([name],i)=><button key={name} aria-pressed={step===i} onClick={()=>setStep(i)}>{i+1}. {name}</button>)}</div>
  <div className="lab-explanation" aria-live="polite"><strong>{stages[step][0]}</strong><p>{stages[step][1]}</p></div>
- {level==='biology'&&<p className="school-extension">高校生物：蝸牛の有毛細胞は振動を受け取る受容器です。三半規管・前庭は平衡感覚に関わります。</p>}
+ {level==='biology'&&<EarHighSchool/>}
  <details><summary>発展：耳小骨・耳管・平衡感覚</summary><p>耳小骨は、つち骨・きぬた骨・あぶみ骨です。耳管は中耳とのどをつなぎ、鼓膜の両側の圧力を調節することに関わります。三半規管や前庭は体の動き・傾きを感じる働きに関わります。</p></details>
  <p className="lab-note">位置関係と働きを示す学習用の模式図です。実寸の断面ではありません。内部の耳の部品はBodyParts3Dの収録モデルに含まれていません。</p>
  <a className="lab-source" href="https://www.nidcd.nih.gov/health/how-do-we-hear" target="_blank" rel="noreferrer">参考：NIH/NIDCD・音が聞こえるしくみ</a>

@@ -86,3 +86,9 @@ pnpm run build
 - 耳の働きの参照：[NIH/NIDCD How Do We Hear?](https://www.nidcd.nih.gov/health/how-do-we-hear)。画像を転載せず、音→鼓膜→耳小骨→蝸牛→聴神経の関係を独自図にしました。
 
 検証：`node scripts/check-school-learning.mjs`。全観察ボタンが実在する収録概念・メッシュへ解決されること、重複と不明IDを除くこと、科目の境界と欠けるモデルの表記を確認します。学校のChromebookでの実速度・3D描画は別途実機確認が必要です。
+
+### 高校生物の耳の探究
+
+耳の高校向け表示に「有毛細胞と神経」「音の高さと大きさ」「聴覚と平衡感覚」を追加しました。受容器電位と聴神経の活動電位、蝸牛の基部／頂部、三半規管／前庭の耳石器を区別します。高校「生物」の刺激の受容と反応の関連例・発展で、耳の細部の一律の必須暗記を示すものではありません。中学校の基本表示には追加内容を表示しません。すべて操作時に更新する独自のSVG模式図で、音声や自動アニメーション、新しい3Dデータは追加しません。
+
+参照：[NIH/NIDCD 聴覚](https://www.nidcd.nih.gov/health/how-do-we-hear)、[NIH/NIDCD 平衡感覚](https://www.nidcd.nih.gov/health/balance-disorders)、[NIH 教育資料](https://www.ncbi.nlm.nih.gov/books/NBK20366/)（有毛細胞と神経の伝達、蝸牛の基部と頂部）。
