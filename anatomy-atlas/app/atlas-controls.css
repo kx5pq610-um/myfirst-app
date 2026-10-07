@@ -1,0 +1,31 @@
+/* Keep the model visible; systems open only when requested. */
+.layers-panel.atlas-layers-closed{display:none}
+.layers-panel.atlas-layers-open{display:flex}
+.atlas-dock{width:fit-content;gap:4px;padding:8px;border-radius:14px;bottom:36px;max-width:calc(100% - 32px)}
+.atlas-dock button{min-height:48px;padding:7px 15px;display:flex;flex-direction:column;gap:5px;font-size:12px;border-radius:9px;white-space:nowrap}
+.atlas-dock button.active{background:#263b48;color:#fff}
+.atlas-dock i{width:1px;height:32px;background:#25384a20;margin:0 4px}
+.atlas-mode-tip{position:absolute;bottom:108px;left:50%;transform:translateX(-50%);font-size:12px;color:#526372;text-align:center;width:min(620px,calc(100% - 28px));pointer-events:none}
+.atlas-mode-tip span{display:block;margin-top:4px;font-size:11px}
+.atlas-selection-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:14px;border-top:1px solid #25384a15}
+.atlas-selection-actions button{height:auto;min-height:46px;white-space:normal;padding:8px;font-size:12px;border:1px solid #25384a20;border-radius:9px;display:flex;justify-content:center;gap:7px}
+.atlas-selection-actions button[aria-pressed=true]{background:#263b48;color:#fff}
+.atlas-selection-actions .atlas-clear-selection{grid-column:1/-1;min-height:32px;border:0;color:#687888}
+.detail-scroll{min-height:0}
+.studio-footer>span{display:none}
+@media(min-width:768px){.top-actions{gap:4px}.top-actions button{gap:6px;font-size:12px;padding:10px}.top-actions kbd{margin-left:8px}.detail-sheet{max-height:calc(100dvh - 100px)}}
+@media(max-width:767px){
+ .atlas-dock{bottom:max(12px,env(safe-area-inset-bottom));padding:5px;gap:1px;max-width:calc(100% - 20px);width:fit-content}
+ .atlas-dock button{padding:6px 8px;min-width:50px;font-size:10px;min-height:48px}
+ .atlas-dock i{margin:0 2px}
+ .atlas-mode-tip{bottom:82px;font-size:10px}
+ .studio-footer{display:none}
+ .atlas-selection-actions{gap:5px;padding-top:8px}
+ .atlas-selection-actions button{min-height:40px;font-size:11px}
+ .detail-sheet{gap:8px!important}
+ body:has(.detail-sheet) .atlas-mode-tip{display:none}
+}
+@media(max-width:767px) and (orientation:portrait){body:has(.detail-sheet) .atlas-dock{display:none}}
+@media(max-height:600px) and (min-width:768px){.atlas-mode-tip{bottom:94px}.detail-sheet{max-height:calc(100dvh - 32px)!important;top:16px!important}}
+
+@media(max-width:767px) and (orientation:portrait){.detail-sheet,.detail-sheet.is-isolated{bottom:max(12px,env(safe-area-inset-bottom))!important;max-height:55dvh!important}}

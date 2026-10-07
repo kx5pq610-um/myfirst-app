@@ -21,7 +21,7 @@ export interface Part {id:string;name:string;conceptId:string;system:SystemId;ch
 export interface Concept {id:string;name:string;elements:string[]}
 export interface Atlas {version:string;sex?:'male';source?:string;scope?:string;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
 export type View = 'three-quarter'|'front'|'back'|'side';
-export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;view:View;rotate:boolean;reset:number}
+export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];selectionName?:string;hidden?:string[];faded?:string[];mode?:'select'|'dissect';focus?:number;isolate:boolean;view:View;rotate:boolean;reset:number}
 /** 中学校の授業でまず扱うまとまり。細かい医学系の分類はデータとして残し、画面には出しません。 */
 export interface LearningLayer {id:string;name:string;color:string;systems:SystemId[]}
 export const LEARNING_LAYERS:LearningLayer[] = [
