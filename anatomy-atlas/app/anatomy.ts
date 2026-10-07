@@ -1,3 +1,4 @@
+import JAPANESE_NAMES from './anatomy-names-ja.json' with {type:'json'};
 export type SystemId = 'skeletal'|'muscular'|'arterial'|'venous'|'nervous'|'digestive'|'respiratory'|'urinary'|'reproductive'|'lymphatic'|'endocrine'|'integumentary'|'connective'|'sensory'|'cardiac';
 export const SYSTEMS: {id:SystemId;name:string;color:string;description:string}[] = [
  {id:'skeletal',name:'骨格',color:'#e2d9ba',description:'骨格は体を支える柱となり、内臓を守り、筋肉が付く場所になります。骨の内部ではミネラルをたくわえたり、血液の細胞をつくったりします。'},
@@ -69,23 +70,38 @@ const EXACT_JA:Record<string,string> = {
  'skin':'皮膚','bone organ':'骨','muscle organ':'筋肉','cranial nerve':'脳神経','nerve trunk':'神経幹','right side of heart':'心臓の右側','left side of heart':'心臓の左側','cavity of right atrium':'右心房','cavity of left atrium':'左心房','cavity of right ventricle':'右心室','cavity of left ventricle':'左心室','wall of right atrium':'右心房の壁','wall of left atrium':'左心房の壁','wall of right ventricle':'右心室の壁','wall of left ventricle':'左心室の壁',
 };
 
-const PHRASES:[RegExp,string][] = [
- [/\bcardinal segment of\b/gi,'主要部位の'],[/\bsegment of\b/gi,'部位の'],[/\bregion of\b/gi,'領域の'],[/\bzone of\b/gi,'領域の'],[/\bpart of\b/gi,'部の'],[/\bwall of\b/gi,'壁の'],
- [/\bright side of\b/gi,'右側の'],[/\bleft side of\b/gi,'左側の'],[/\bright\b/gi,'右'],[/\bleft\b/gi,'左'],[/\bupper\b/gi,'上'],[/\blower\b/gi,'下'],[/\banterior\b/gi,'前'],[/\bposterior\b/gi,'後'],[/\bsuperior\b/gi,'上'],[/\binferior\b/gi,'下'],[/\bmiddle\b/gi,'中'],
- [/\bcommon\b/gi,'総'],[/\binternal\b/gi,'内'],[/\bexternal\b/gi,'外'],[/\bsuperficial\b/gi,'表面'],[/\bdeep\b/gi,'深'],[/\bsmall\b/gi,'小'],[/\blarge\b/gi,'大'],[/\bfirst\b/gi,'第1'],[/\bsecond\b/gi,'第2'],[/\bthird\b/gi,'第3'],[/\bbranch\b/gi,'枝'],[/\btrunk\b/gi,'幹'],[/\bsegmental\b/gi,'区域'],
- [/\bartery\b/gi,'動脈'],[/\bvein\b/gi,'静脈'],[/\bnerve\b/gi,'神経'],[/\bmuscle\b/gi,'筋'],[/\bbone\b/gi,'骨'],[/\bligament\b/gi,'靭帯'],[/\bcartilage\b/gi,'軟骨'],[/\borgan\b/gi,'器官'],[/\bmembrane\b/gi,'膜'],[/\bwall\b/gi,'壁'],
- [/\bheart\b/gi,'心臓'],[/\bbrain\b/gi,'脳'],[/\bspinal cord\b/gi,'せきずい'],[/\blung\b/gi,'肺'],[/\btrachea\b/gi,'気管'],[/\bdiaphragm\b/gi,'横隔膜'],[/\besophagus\b/gi,'食道'],[/\bstomach\b/gi,'胃'],[/\bliver\b/gi,'肝臓'],[/\bspleen\b/gi,'ひ臓'],[/\bpancreas\b/gi,'すい臓'],[/\bintestin(?:e|al)\b/gi,'腸'],[/\bkidney\b/gi,'腎臓'],[/\bureter\b/gi,'尿管'],[/\bbladder\b/gi,'ぼうこう'],[/\burethra\b/gi,'尿道'],[/\beye(?:ball)?\b/gi,'眼'],[/\biris\b/gi,'虹彩'],[/\blens\b/gi,'水晶体'],[/\bretina\b/gi,'網膜'],[/\boptic\b/gi,'視'],[/\bear\b/gi,'耳'],[/\bskin\b/gi,'皮膚'],[/\bblood\b/gi,'血液'],
-];
-
-/** BodyParts3D names are English source labels. Keep the source name for IDs/search, but show a readable Japanese label in the UI. */
+/** Source labels remain unchanged for model IDs and English search. */
 export function localizeAnatomyName(name:string){
- const source=name.trim();
- const exact=EXACT_JA[source.toLowerCase()];
- if(exact)return exact;
- let value=source;
- for(const [pattern,replacement] of PHRASES)value=value.replace(pattern,replacement);
- return value.split(/\s+/).filter(Boolean).join(' ')
-   .replace(/\s+の\s+/g,'の').replace(/\s+([右左上下前後])\s+/g,'$1');
+ const source=name.trim().toLowerCase();
+ return EXACT_JA[source] ?? (JAPANESE_NAMES as Record<string,string>)[source] ?? '名称未登録の人体構造';
+}
+
+/** Explain difficult words used in the selected structure's label. */
+export function anatomyNameHint(name:string){
+ const label=localizeAnatomyName(name);
+ const hints:string[]=[];
+ if(/\b(right|left)\b/i.test(name))hints.push('右・左は、見ている人ではなく人体自身の向きです。');
+ const terms:[string,string][]=[
+  ['乳頭筋','乳頭筋は、心臓の弁を支える筋肉です。'],
+  ['腱索','腱索は、心臓の弁と筋肉をつなぐひものような組織です。'],
+  ['靭帯','靭帯（じんたい）は、骨や器官をつないで支える組織です。'],
+  ['腓腹筋','腓腹筋（ひふくきん）は、ふくらはぎの筋肉です。'],
+  ['橈','橈骨（とうこつ）は、前腕の親指側にある骨です。'],
+  ['尺','尺骨（しゃっこつ）は、前腕の小指側にある骨です。'],
+  ['脛','脛骨（けいこつ）は、すねにある太い骨です。'],
+  ['腓骨','腓骨（ひこつ）は、すねの外側にある細い骨です。'],
+  ['屈筋','屈筋（くっきん）は、関節を曲げる筋肉です。'],
+  ['伸筋','伸筋（しんきん）は、関節を伸ばす筋肉です。'],
+  ['外転筋','外転筋（がいてんきん）は、手足などを体の中心線から離す筋肉です。'],
+  ['内転筋','内転筋（ないてんきん）は、手足などを体の中心線へ近づける筋肉です。'],
+  ['幹','幹（かん）は、血管や神経などの太い主な部分を表します。'],
+  ['枝','枝（えだ）は、血管や神経などが枝分かれした部分を表します。'],
+  ['区域','区域（くいき）は、器官の中を分けて呼ぶ範囲です。'],
+  ['皮質','皮質（ひしつ）は、器官の外側の層です。'],
+  ['髄質','髄質（ずいしつ）は、器官の内側の部分です。'],
+ ];
+ for(const [word,hint] of terms)if(label.includes(word)&&hints.length<3)hints.push(hint);
+ return hints.join(' ');
 }
 
 export function explanation(name:string,system:SystemId){return EXPLANATIONS[name.toLowerCase()] ?? SYSTEMS.find(s=>s.id===system)?.description ?? '';}
