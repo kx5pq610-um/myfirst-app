@@ -11,12 +11,14 @@ import AnatomyScene from './scene';
 import {sceneHistory,hideParts,fadeSelected,partVisibility,toggleSelected,fadeSurroundings,nearbyParts,REGIONS} from './atlas-controls';
 import {DEFAULT_VISIBLE,LEARNING_LAYERS,LEARNING_VISIBLE_SYSTEMS,ORGAN_VISIBLE_SYSTEMS,SYSTEMS,EXPLANATIONS,explanation,localizeAnatomyName,anatomyNameHint,type Atlas,type Concept,type SceneState,type View} from './anatomy';
 import LearningPanel,{type Lesson,type LessonId} from './learning';
+import {SCHOOL_TOPICS,observationIds,type Observation} from './school-curriculum';
 import OrganModel from './organ-model';
 import AtlasWorkspace from './atlas-workspace';
 import type {SavedView} from './saved-views';
 import type {CameraPose} from './anatomy';
 const initial:SceneState={explode:0,visible:DEFAULT_VISIBLE,selected:[],isolate:false,view:'three-quarter',rotate:false,reset:0,focus:0,hidden:[],faded:[],revealed:[],region:'all',labels:true,quality:'light',mode:'select'};
 export default function Home(){
+ const [schoolGuide,setSchoolGuide]=useState<{title:string;hint:string}|null>(null);
  const [organModel,setOrganModel]=useState<'heart'|'eye'|null>(null);
  const detailTitle=useRef<HTMLHeadingElement>(null),cameraPose=useRef<CameraPose|undefined>(undefined);
  const cameraSequence=useRef(0);
@@ -44,8 +46,16 @@ export default function Home(){
  useEffect(()=>{if(!atlas)return;return registerAtlasTools(atlas,c=>flushSync(()=>choose(c)));},[atlas]);
  const choosePart=(id:string)=>{const p=parts.get(id);if(!p)return;if(state.mode==='dissect'){setState(s=>hideParts(s,[id]));setDetails(false);return;}setState(s=>s.mode==='multi'?toggleSelected(s,id):({...s,selected:[id],selectionName:p.name,focus:0,isolate:false,rotate:false}));setDetails(true);setPanel(null);};
  const toggleLayer=(layer:typeof LEARNING_LAYERS[number])=>{setDetails(false);setState(s=>{const enabled=layer.systems.every(id=>s.visible.includes(id));return {...s,selected:[],isolate:false,visible:enabled?s.visible.filter(id=>!layer.systems.includes(id)):[...new Set([...s.visible,...layer.systems])]};});};
- const focusLesson=(lesson:Lesson)=>{setLessonId(lesson.id);const selected=lesson.focusNames?.flatMap(name=>atlas?.concepts.filter(c=>c.name.toLowerCase()===name.toLowerCase()).flatMap(c=>c.elements)??[])??[];setDetails(false);setState(s=>({...s,visible:lesson.systems,selected:[...new Set(selected)],selectionName:undefined,isolate:false,rotate:false,reset:s.reset+1,hidden:[],faded:[],revealed:[],region:'all',focus:0,mode:'select'}));};
- const reset=()=>{setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1}));setDetails(false);setPanel(null);};
+ const observeLesson=(lesson:Lesson,observation?:Observation)=>{
+  const names=observation?.names??lesson.focusNames??[];
+  const ids=atlas?observationIds(atlas,names):[];
+  if(!ids.length){setSchoolGuide({title:lesson.title,hint:'この構造は収録3Dにはありません。授業の学習図で働きを確認してください。'});return;}
+  setLessonId(lesson.id);setLessonOpen(false);setDetails(false);setPanel(null);
+  setSchoolGuide({title:observation?.title??lesson.title,hint:observation?.hint??SCHOOL_TOPICS[lesson.id].goal});
+  setState(s=>({...s,visible:lesson.systems,selected:[...new Set(ids)],selectionName:undefined,isolate:true,rotate:false,reset:s.reset+1,hidden:[],faded:[],revealed:[],region:'all',focus:(s.focus??0)+1,mode:'select',cameraRequest:undefined,zoomRequest:undefined}));
+ };
+ const focusLesson=(lesson:Lesson)=>observeLesson(lesson);
+ const reset=()=>{setSchoolGuide(null);setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1}));setDetails(false);setPanel(null);};
  const openPanel=(next:'layers'|'search'|'views'|'tools')=>{setDetails(false);setPanel(p=>p===next?null:next);};
  const viewNames:Record<View,string>={'three-quarter':'斜め前','front':'正面','side':'側面','back':'背面'};
  useEffect(()=>{
@@ -75,7 +85,8 @@ export default function Home(){
   </section>
   {panel==='search'&&<section className="search-panel glass" aria-label="人体を検索"><div className="panel-heading"><span>構造を検索</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="検索を閉じる"><X size={18}/></Button></div><Combobox<Concept> items={results} value={null} onValueChange={value=>{if(value)choose(value);}} inputValue={query} onInputValueChange={setQuery} itemToStringLabel={c=>localizeAnatomyName(c.name)} filter={null} open onOpenChange={open=>{if(!open)setPanel(null);}}><ComboboxInput autoFocus placeholder="心臓、太ももの骨、視神経…" aria-label="名前から人体の構造を検索" showTrigger={false}/><ComboboxContent className="anatomy-search-results"><ComboboxEmpty>一致する構造がありません。</ComboboxEmpty><ComboboxList>{(c:Concept)=><ComboboxItem key={c.id} value={c}><span className="search-result-name">{localizeAnatomyName(c.name)}</span><span className="small-number">{c.elements.length}個</span></ComboboxItem>}</ComboboxList></ComboboxContent></Combobox><p className="search-note">{query?'最大80件を表示しています。より細かい構造は検索語を追加してください。':'主な器官名や、体の構造名を入力してください。日本語・英語のどちらでも検索できます。'}</p></section>}
   {(panel==='views'||panel==='tools')&&<AtlasWorkspace key={panel} kind={panel} atlas={atlas} state={state} camera={()=>cameraPose.current} onChange={setState} onLoad={loadView} onClose={()=>setPanel(null)}/>}
-  <LearningPanel open={lessonOpen} lessonId={lessonId} onClose={()=>setLessonOpen(false)} onLessonChange={setLessonId} onFocus={focusLesson} onModel={kind=>{setLessonOpen(false);setOrganModel(kind);}}/>
+  <LearningPanel open={lessonOpen} lessonId={lessonId} onClose={()=>setLessonOpen(false)} onLessonChange={setLessonId} onFocus={focusLesson} onObserve={observeLesson} onModel={kind=>{setLessonOpen(false);setOrganModel(kind);}}/>
+  {schoolGuide&&!lessonOpen&&!organModel&&<aside className="school-observation-guide glass" aria-label="授業の観察ポイント"><button className="school-guide-close" aria-label="観察ポイントを閉じる" onClick={()=>setSchoolGuide(null)}>×</button><strong>{schoolGuide.title}</strong><p>{schoolGuide.hint}</p><button onClick={()=>{setDetails(false);setPanel(null);setLessonOpen(true);}}>学習図・説明へ戻る</button><p><small>ドラッグで回転し、位置と形を確かめよう。</small></p></aside>}
   {organModel&&atlas&&<OrganModel key={organModel} atlas={atlas} kind={organModel} onClose={()=>{setOrganModel(null);setLessonOpen(true);}}/>}
   <nav className="view-controls glass" aria-label="視点コントロール">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1}))} title={`${viewNames[v]}から見る`} aria-label={`${viewNames[v]}から見る`}><span>{['斜め','正面','側面','背面'][i]}</span></Button>)}<i/><Button variant="ghost" aria-label="拡大" title="拡大" onClick={()=>zoom(.82)}><ZoomIn size={17}/></Button><Button variant="ghost" aria-label="縮小" title="縮小" onClick={()=>zoom(1.22)}><ZoomOut size={17}/></Button><Button variant="ghost" aria-label="視点と表示をリセット" title="リセット" onClick={reset}><RotateCcw size={17}/></Button></nav>
   <div className="scene-caption"><span className="caption-line"/><span>{state.isolate?(selectedTitle||'選択中の構造'):'成人男性の人体モデル'}</span><span className="caption-line"/></div>

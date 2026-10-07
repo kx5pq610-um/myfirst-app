@@ -77,7 +77,7 @@ const eyeParts=[
  ['硝子体','水晶体の後ろを満たす透明なゼリー状の物質。光を通し、眼球の形を支えます。'],
 ];
 
-export function EyeLab(){
+export function EyeLab({advanced=true}:{advanced?:boolean}){
  const [near,setNear]=useState(false),[bright,setBright]=useState(true),[part,setPart]=useState(2),[rays,setRays]=useState(true);
  const lens=near?28:14, gap=bright?14:29;
  function hit(i:number){return {role:'button',tabIndex:0,'aria-label':eyeParts[i][0],'aria-pressed':part===i,onClick:()=>setPart(i),onKeyDown:(e:React.KeyboardEvent)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setPart(i);}}};}
@@ -88,20 +88,20 @@ export function EyeLab(){
    <path {...hit(4)} d="M142 65 C245 0 375 50 375 165 C375 270 250 312 142 263" fill="none" stroke={part===4?'#e9b438':'#cf7e78'} strokeWidth="9"/>
    <path {...hit(0)} d="M102 105Q37 165 106 226" fill="#d3f0f8" stroke={part===0?'#d89f29':'#6bafc4'} strokeWidth="5"/>
    <path {...hit(1)} d={`M119 112V${165-gap} M119 ${165+gap}V218`} stroke={part===1?'#c49328':'#407a79'} strokeWidth="11"/>
-   <g {...hit(3)} stroke={part===3?'#e4b837':'#a56881'} strokeWidth="6"><path d="M138 87l18 20 M136 239l20-19"/><path d="M154 107L162 129 M154 221L162 201" strokeWidth="2"/></g>
+   <g {...(advanced?hit(3):{})} stroke={part===3?'#e4b837':'#a56881'} strokeWidth="6"><path d="M138 87l18 20 M136 239l20-19"/><path d="M154 107L162 129 M154 221L162 201" strokeWidth="2"/></g>
    <ellipse {...hit(2)} cx="165" cy="165" rx={lens} ry="43" fill="#8bcddda0" stroke={part===2?'#c38e22':'#4e95ac'} strokeWidth="3"/>
    <path {...hit(6)} d="M363 215L414 245L408 263L354 231" fill="#edcf8b" stroke={part===6?'#a37518':'#c5a56c'} strokeWidth="3"/>
-   <path {...hit(5)} d="M374 153Q377 166 374 180" stroke={part===5?'#a57d17':'#e4b937'} strokeWidth="8" fill="none"/>
+   <path {...(advanced?hit(5):{})} d="M374 153Q377 166 374 180" stroke={part===5?'#a57d17':'#e4b937'} strokeWidth="8" fill="none"/>
    <text {...hit(7)} x="252" y="224" fill="#5c7887">硝子体</text>
    {rays&&<g fill="none" stroke="#c28a12" strokeWidth="2" pointerEvents="none">{[-1,1].map(sign=><path key={sign} d={`M8 ${near?165:165+sign*(gap-4)} L80 ${165+sign*(gap-4)} L165 ${165+sign*(gap-7)} L375 165`}/>)}</g>}
-   <g fontSize="13" fill="#385460"><text x="27" y="83">角膜</text><text x="91" y="268">虹彩</text><text x="132" y="62">毛様体</text><text x="151" y="237">水晶体</text><text x="299" y="49">網膜</text><text x="329" y="137">黄斑</text><text x="365" y="289">視神経</text><text x="10" y="156">光 →</text></g>
+   <g fontSize="13" fill="#385460"><text x="27" y="83">角膜</text><text x="91" y="268">虹彩</text>{advanced&&<text x="132" y="62">毛様体</text>}<text x="151" y="237">水晶体</text><text x="299" y="49">網膜</text>{advanced&&<text x="329" y="137">黄斑</text>}<text x="365" y="289">視神経</text><text x="10" y="156">光 →</text></g>
   </svg>
   <div className="lab-controls"><button aria-pressed={!near} onClick={()=>setNear(false)}>遠くを見る</button><button aria-pressed={near} onClick={()=>setNear(true)}>近くを見る</button><button aria-pressed={bright} onClick={()=>setBright(!bright)}>{bright?'明るい所 → 暗くする':'暗い所 → 明るくする'}</button><label><input type="checkbox" checked={rays} onChange={e=>setRays(e.target.checked)}/> 光の道すじ</label></div>
   <div className="lab-explanation" aria-live="polite"><strong>{near?'近く：水晶体が厚くなる':'遠く：水晶体が薄くなる'}</strong><p>{bright?'明るい所：瞳孔が小さくなり、光を入れすぎないようにします。':'暗い所：瞳孔が大きくなり、より多くの光を取り込みます。'}</p></div>
-  <div className="lab-controls lab-part-list">{eyeParts.map(([name],i)=><button key={name} aria-pressed={part===i} onClick={()=>setPart(i)}>{name}</button>)}</div>
+  <div className="lab-controls lab-part-list">{eyeParts.map(([name],i)=>!advanced&&[3,5].includes(i)?null:<button key={name} aria-pressed={part===i} onClick={()=>setPart(i)}>{name}</button>)}</div>
   <div className="lab-explanation" aria-live="polite"><strong>{eyeParts[part][0]}</strong><p>{eyeParts[part][1]}</p></div>
   <p className="lab-note">断面・光線は働きを示す模式図です。形や角度は実寸・厳密な光学計算ではありません。距離と明るさを別々に操作して、ピント調節と光量調節を比べます。</p>
-  <details><summary>網膜から脳へ：なぜ「見える」の？</summary><p>光 → 網膜の視細胞 → 神経の信号 → 視神経 → 脳。水晶体は像を結び、網膜は光を受け取り、脳は情報を処理します。</p><p>発展：桿体細胞は暗い所での見え方、錐体細胞は色や細かい形の見分けに関わります。</p></details>
+  <details><summary>網膜から脳へ：なぜ「見える」の？</summary><p>光 → 網膜の視細胞 → 神経の信号 → 視神経 → 脳。水晶体は像を結び、網膜は光を受け取り、脳は情報を処理します。</p>{advanced&&<p>発展：桿体細胞は暗い所での見え方、錐体細胞は色や細かい形の見分けに関わります。</p>}</details>
   <Check question="近くにピントを合わせると水晶体は？" options={['厚くなる','薄くなる','光を出す']} correct={0} explanation="近くを見ると水晶体は厚くなります。瞳孔の大きさは光の量の調節に関係します。"/>
   <a className="lab-source" href="https://www.nei.nih.gov/eye-health-information/healthy-vision/how-eyes-work" target="_blank" rel="noreferrer">図の参考：米国NIH・目のしくみ</a>
  </section>;
