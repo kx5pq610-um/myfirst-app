@@ -27,7 +27,7 @@ export function learningSelections(atlas:Atlas):Map<string,Concept>{
  for(const name of ORGAN_NAMES){
   const source=concepts.get(name);
   const extras=atlas.parts.filter(p=>EXTRA_PARTS[name]?.includes(p.name.toLowerCase())).map(p=>p.id);
-  const concept=source?{...source,elements:[...new Set([...source.elements,...extras])].filter(id=>partIds.has(id))}:undefined;
+  const concept=source?{...source,elements:[...new Set([...source.elements,...extras])].filter(id=>partIds.has(id)&&!lookup.has(id))}:undefined;
   if(concept)for(const id of concept.elements)if(!lookup.has(id))lookup.set(id,concept);
  }
  const byId=new Map(atlas.concepts.map(c=>[c.id,c]));
