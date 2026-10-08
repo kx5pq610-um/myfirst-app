@@ -23,7 +23,7 @@ export interface Atlas {version:string;sex?:'male';source?:string;scope?:string;
 export type View = 'three-quarter'|'front'|'back'|'side';
 export type RegionId='all'|'head'|'chest'|'abdomen'|'pelvis'|'arms'|'legs';
 export interface CameraPose {position:number[];target:number[]}
-export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];selectionName?:string;hidden?:string[];faded?:string[];revealed?:string[];region?:RegionId;labels?:boolean;quality?:'light'|'standard';zoomRequest?:{id:number;factor:number};cameraRequest?:CameraPose&{id:number};mode?:'select'|'multi'|'dissect';focus?:number;isolate:boolean;view:View;rotate:boolean;reset:number}
+export interface SceneState {selectionLevel?:'organ'|'part';inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];selectionName?:string;hidden?:string[];faded?:string[];revealed?:string[];region?:RegionId;labels?:boolean;quality?:'light'|'standard';zoomRequest?:{id:number;factor:number};cameraRequest?:CameraPose&{id:number};mode?:'select'|'multi'|'dissect';focus?:number;isolate:boolean;view:View;rotate:boolean;reset:number}
 /** 中学校の授業でまず扱うまとまり。細かい医学系の分類はデータとして残し、画面には出しません。 */
 export interface LearningLayer {id:string;name:string;color:string;systems:SystemId[]}
 export const LEARNING_LAYERS:LearningLayer[] = [
@@ -40,6 +40,12 @@ export const LEARNING_VISIBLE_SYSTEMS:SystemId[] = LEARNING_LAYERS.flatMap(layer
 export const ORGAN_VISIBLE_SYSTEMS:SystemId[] = ['cardiac','arterial','venous','respiratory','digestive','urinary'];
 export const DEFAULT_VISIBLE:SystemId[] = LEARNING_VISIBLE_SYSTEMS;
 export const EXPLANATIONS:Record<string,string> = {
+ 'right lung':'胸の右側にある呼吸の器官です。気管支を通って空気が入り、肺胞で酸素を血液に渡し、二酸化炭素を受け取ります。',
+ 'left lung':'胸の左側にある呼吸の器官です。気管支を通って空気が入り、肺胞で酸素を血液に渡し、二酸化炭素を受け取ります。',
+ 'small intestine':'胃から続く長い管です。消化液で食べ物を分解し、内側の柔毛から栄養分を吸収します。',
+ 'large intestine':'小腸から続く管です。主に水分を吸収し、残ったものを便として肛門へ運びます。',
+ 'right kidney':'背中側の右にある器官です。血液から不要な物質や余分な水分を取り除いて尿をつくります。',
+ 'left kidney':'背中側の左にある器官です。血液から不要な物質や余分な水分を取り除いて尿をつくります。',
  'heart':'胸の中央にある筋肉のポンプです。右側は肺へ、左側は全身へ血液を送り出します。4つの部屋と弁が、血液の流れを一方向に保ちます。',
  'cavity of right atrium':'右心房の内側の空間です。全身から戻った酸素の少ない血液を受け取り、右心室へ送ります。',
  'cavity of left atrium':'左心房の内側の空間です。肺から戻った酸素の多い血液を受け取り、左心室へ送ります。',
