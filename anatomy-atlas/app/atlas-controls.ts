@@ -16,7 +16,7 @@ export function sceneHistory(history:History,action:HistoryAction):History{
  return {current:next,past:[...history.past.slice(-19),history.current],future:[]};
 }
 export function hideParts(state:SceneState,ids=state.selected):SceneState{
- return {...state,hidden:[...new Set([...(state.hidden??[]),...ids])],selected:[],selectionName:undefined,isolate:false,rotate:false};
+ return {...state,hidden:[...new Set([...(state.hidden??[]),...ids])],selected:[],selectionName:undefined,isolate:!!state.inspection,focus:0,keepCamera:(state.keepCamera??0)+1,rotate:false};
 }
 export function fadeSelected(state:SceneState):SceneState{
  const selected=new Set(state.selected),faded=new Set(state.faded??[]);
@@ -35,13 +35,13 @@ export function inRegion(part:Pick<Part,'id'|'system'>&Partial<Pick<Part,'bounds
 }
 export function partVisibility(part:Pick<Part,'id'|'system'>&Partial<Pick<Part,'bounds'>>,state:SceneState){
  if(state.hidden?.includes(part.id))return false;
- return state.isolate?state.selected.includes(part.id):state.selected.includes(part.id)||((state.visible.includes(part.system)||!!state.revealed?.includes(part.id))&&inRegion(part,state.region));
+ return state.isolate?(state.inspection?.elements??state.selected).includes(part.id):state.selected.includes(part.id)||((state.visible.includes(part.system)||!!state.revealed?.includes(part.id))&&inRegion(part,state.region));
 }
 
 /** One cached lookup per state change, rather than array scans for every animation frame. */
 export function partStates(parts:(Pick<Part,'id'|'system'>&Partial<Pick<Part,'bounds'>>)[],state:SceneState){
- const hidden=new Set(state.hidden),faded=new Set(state.faded),selected=new Set(state.selected),visible=new Set(state.visible),revealed=new Set(state.revealed);
- return parts.map(part=>({selected:selected.has(part.id),faded:faded.has(part.id),visible:!hidden.has(part.id)&&(state.isolate?selected.has(part.id):selected.has(part.id)||((visible.has(part.system)||revealed.has(part.id))&&inRegion(part,state.region)))}));
+ const hidden=new Set(state.hidden),faded=new Set(state.faded),selected=new Set(state.selected),isolated=new Set(state.inspection?.elements??state.selected),visible=new Set(state.visible),revealed=new Set(state.revealed);
+ return parts.map(part=>({selected:selected.has(part.id),faded:faded.has(part.id),visible:!hidden.has(part.id)&&(state.isolate?isolated.has(part.id):selected.has(part.id)||((visible.has(part.system)||revealed.has(part.id))&&inRegion(part,state.region)))}));
 }
 
 export function toggleSelected(state:SceneState,id:string):SceneState{

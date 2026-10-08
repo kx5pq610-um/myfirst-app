@@ -23,7 +23,9 @@ export interface Atlas {version:string;sex?:'male';source?:string;scope?:string;
 export type View = 'three-quarter'|'front'|'back'|'side';
 export type RegionId='all'|'head'|'chest'|'abdomen'|'pelvis'|'arms'|'legs';
 export interface CameraPose {position:number[];target:number[]}
-export interface SceneState {selectionLevel?:'organ'|'part';inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];selectionName?:string;hidden?:string[];faded?:string[];revealed?:string[];region?:RegionId;labels?:boolean;quality?:'light'|'standard';zoomRequest?:{id:number;factor:number};cameraRequest?:CameraPose&{id:number};mode?:'select'|'multi'|'dissect';focus?:number;isolate:boolean;view:View;rotate:boolean;reset:number}
+/** The organ stays visible while its smaller structures are selected. */
+export interface OrganInspection {name:string;elements:string[]}
+export interface SceneState {inspection?:OrganInspection;keepCamera?:number;selectionLevel?:'organ'|'part';inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];selectionName?:string;hidden?:string[];faded?:string[];revealed?:string[];region?:RegionId;labels?:boolean;quality?:'light'|'standard';zoomRequest?:{id:number;factor:number};cameraRequest?:CameraPose&{id:number};mode?:'select'|'multi'|'dissect';focus?:number;isolate:boolean;view:View;rotate:boolean;reset:number}
 /** 中学校の授業でまず扱うまとまり。細かい医学系の分類はデータとして残し、画面には出しません。 */
 export interface LearningLayer {id:string;name:string;color:string;systems:SystemId[]}
 export const LEARNING_LAYERS:LearningLayer[] = [

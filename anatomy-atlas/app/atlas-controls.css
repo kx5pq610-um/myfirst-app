@@ -57,3 +57,8 @@
 
 @media(max-width:767px) and (orientation:portrait){.detail-sheet,.detail-sheet.is-isolated{bottom:max(12px,env(safe-area-inset-bottom))!important;max-height:62dvh!important}}
 @media(min-width:768px) and (max-width:1150px){.top-actions{top:26px;gap:2px}.top-actions button span,.top-actions kbd{display:none}.top-actions button{min-width:40px;min-height:44px;padding:9px}}
+
+.organ-inspection-guide{position:absolute;left:24px;top:132px;width:240px;padding:16px;z-index:24;border-radius:18px;color:#28434a;font-size:13px}
+.organ-inspection-guide p{line-height:1.6;margin:8px 0}.organ-inspection-guide button{width:100%;min-height:44px;white-space:normal}
+.organ-parts-list{margin-top:16px}.organ-parts-list summary{cursor:pointer;min-height:44px;padding:10px 0;font-weight:600}.organ-parts-list[open]{max-height:280px;overflow:auto}.organ-parts-list button{display:block;width:100%;text-align:left;min-height:44px;padding:10px;border:1px solid #d8e1e1;border-radius:8px;margin:5px 0;background:#f8fbfb;color:#28434a;font-size:13px}.organ-parts-list button[aria-pressed=true]{background:#d5eeee;border-color:#34747a}
+@media(max-width:767px){.organ-inspection-guide{left:12px;top:108px;width:calc(100% - 24px);padding:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.organ-inspection-guide strong{width:100%}.organ-inspection-guide p{display:none}.organ-inspection-guide button{width:auto;flex:1;font-size:12px}}
