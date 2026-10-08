@@ -12,6 +12,10 @@
 .atlas-selection-actions button[aria-pressed=true]{background:#263b48;color:#fff}
 .atlas-selection-actions .atlas-clear-selection{grid-column:1/-1;min-height:32px;border:0;color:#687888}
 .detail-scroll{min-height:0}
+.detail-scroll[hidden]{display:none}
+.explanation-toggle{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;border:1px solid #25384a20;border-radius:9px;font-size:13px;align-self:flex-start}
+.compact-detail{overflow-y:auto!important}
+@media(min-width:768px) and (min-height:601px){.detail-sheet.compact-detail{bottom:auto!important;max-height:calc(100dvh - 150px)}}
 .atlas-region-picker{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px}
 .atlas-region-picker button{font-size:11px;padding:6px 9px;border:1px solid #25384a20;border-radius:6px}
 .atlas-region-picker button[aria-pressed=true]{background:#263b48;color:white}
