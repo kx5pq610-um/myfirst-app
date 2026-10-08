@@ -51,7 +51,7 @@ export function toggleSelected(state:SceneState,id:string):SceneState{
 export function fadeSurroundings(parts:Part[],state:SceneState):SceneState{
  const selected=new Set(state.selected),faded=new Set(state.faded);
  for(const p of parts)if(selected.has(p.id))faded.delete(p.id);else if(partVisibility(p,{...state,isolate:false}))faded.add(p.id);
- return {...state,isolate:false,faded:[...faded],focus:(state.focus??0)+1};
+ return {...state,isolate:false,faded:[...faded],focus:0,keepCamera:(state.keepCamera??0)+1};
 }
 export function nearbyParts(parts:Part[],state:SceneState):SceneState{
  const selected=parts.filter(p=>state.selected.includes(p.id));if(!selected.length)return state;
@@ -61,5 +61,5 @@ export function nearbyParts(parts:Part[],state:SceneState):SceneState{
   const distance=(p:Part)=>[0,1,2].reduce((sum,i)=>sum+Math.abs((p.bounds[0][i]+p.bounds[1][i]-min[i]-max[i])/2),0);
   return distance(a)-distance(b);
  }).slice(0,80).map(p=>p.id);
- return {...state,isolate:false,revealed:[...new Set([...state.revealed??[],...neighbors])],hidden:state.hidden?.filter(id=>!neighbors.includes(id)),focus:(state.focus??0)+1};
+ return {...state,isolate:false,revealed:[...new Set([...state.revealed??[],...neighbors])],hidden:state.hidden?.filter(id=>!neighbors.includes(id)),focus:0,keepCamera:(state.keepCamera??0)+1};
 }
