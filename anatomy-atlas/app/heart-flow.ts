@@ -53,8 +53,8 @@ export function createHeartFlow(scene:T.Scene,host:HTMLElement,onChamber:(id:str
  const oxygenated=new T.Color('#de4750'),deoxygenated=new T.Color('#863b49');
  const projected=new T.Vector3(),sample=new T.Vector3();
  return {
-  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,beat:Beat,dt:number,bpm:number,showFlow:boolean,transform:(p:T.Vector3,chamber:number)=>T.Vector3,scope:'heart'|'all'='all',xray=true,selected=''){
-   group.visible=visible&&showFlow;leaders.visible=visible;layer.hidden=!visible;if(!visible)return;
+  update(camera:T.Camera,visible:boolean,step:number,progress:number,coupled:boolean,running:boolean,beat:Beat,dt:number,bpm:number,showFlow:boolean,transform:(p:T.Vector3,chamber:number)=>T.Vector3,scope:'heart'|'all'='all',xray=true,selected='',labelsVisible=true){
+   group.visible=visible&&showFlow;leaders.visible=visible&&labelsVisible;layer.hidden=!visible||!labelsVisible;if(!visible)return;
    const width=host.clientWidth,height=host.clientHeight;
    // Follow the same deformation as the tissue, including each valve anchor.
    const placed:{x:number;y:number}[]=[],leaderPositions=leaderGeometry.getAttribute('position');

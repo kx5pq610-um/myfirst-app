@@ -65,7 +65,7 @@ function NervousLesson(){return <div className="lesson-visual"><div className="l
 
 function Visual({id,level}:{id:LessonId;level:SchoolLevel}){if(id==='ear')return <EarLab level={level}/>;if(id==='digestive')return <DigestiveLab/>;if(id==='movement')return <MovementLab/>;if(id==='homeostasis')return <GlucoseLab/>;if(id==='immune')return <ImmuneLab/>;if(id==='heart')return <HeartLab/>;if(id==='blood')return <BloodLesson/>;if(id==='respiratory')return <RespiratoryLesson/>;if(id==='urinary')return <UrinaryLesson/>;if(id==='liver')return <LiverLesson/>;if(id==='eye')return <><EyeLab advanced={level==='biology'}/>{level==='middle'&&<MiddleSenses kind="eye"/>}</>;return <NervousLesson/>;}
 
-export interface LearningPanelProps {open:boolean;lessonId:LessonId;onClose:()=>void;onLessonChange:(id:LessonId)=>void;onFocus:(lesson:Lesson)=>void;onObserve:(lesson:Lesson,observation:Observation)=>void;onModel:(kind:'heart'|'eye')=>void}
+export interface LearningPanelProps {open:boolean;lessonId:LessonId;onClose:()=>void;onLessonChange:(id:LessonId)=>void;onFocus:(lesson:Lesson)=>void;onObserve:(lesson:Lesson,observation:Observation)=>void;onModel:(kind:'heart'|'eye'|'ear')=>void}
 
 export default function LearningPanel({open,lessonId,onClose,onLessonChange,onFocus,onObserve,onModel}:LearningPanelProps){
  const [expanded,setExpanded]=useState(false),[level,setLevel]=useState<SchoolLevel>('middle');
@@ -80,13 +80,14 @@ export default function LearningPanel({open,lessonId,onClose,onLessonChange,onFo
    <div className="school-levels" aria-label="学習する段階">{SCHOOL_LEVELS.map(l=><button key={l.id} aria-pressed={level===l.id} onClick={()=>changeLevel(l.id)}>{l.name}</button>)}</div>
    <nav className="lesson-nav school-topic-nav" aria-label="学習テーマ">{available.map(item=><button key={item.id} aria-pressed={item.id===lesson.id} className={item.id===lesson.id?'active':''} onClick={()=>onLessonChange(item.id)}><span className="lesson-nav-dot" style={{background:item.color}}/>{item.title}</button>)}</nav>
    <div className="learning-scroll" key={`${level}-${lesson.id}`}>
+    <section className="school-model-picker" aria-label="3D模型を選ぶ"><h4>見て、さわって学ぼう</h4><div className="school-model-grid">{(['heart','eye','ear'] as const).filter(id=>available.some(item=>item.id===id)).map(id=><button key={id} aria-label={`${id==='heart'?'心臓':id==='eye'?'目':'耳'}の3D模型を開く`} onClick={()=>onModel(id)}><img src={new URL(`lesson-previews/${id}.png`,document.baseURI).href} alt="" loading="lazy"/><strong>{id==='heart'?'心臓':id==='eye'?'目':'耳'}</strong><small>3Dで観察</small></button>)}</div></section>
     <button className="lab-expand" aria-pressed={expanded} onClick={()=>setExpanded(!expanded)}>{expanded?'3Dモデルと並べる':'学習図を大きく表示'}</button>
     <div className="lesson-heading"><div><span className="lesson-kicker">{course.name} · {topic.unit}</span><h3>{lesson.title}</h3><p>{lesson.subtitle}</p></div></div>
     <p className="school-scope">{curriculumRelation(lesson.id,level)}</p><section className="school-goal"><b>この観察で説明できるようになること</b><p>{topic.goal}</p></section>
     <section className="school-observations"><h4>構造を3Dで見る</h4><Button className="lesson-focus" onClick={()=>onFocus(lesson)}><MousePointer2 size={16}/> 関係する器官を取り出して見る<ChevronRight size={16}/></Button>
      {topic.observations.map(o=><div key={o.title}><button onClick={()=>onObserve(lesson,o)}>{o.title} <ChevronRight size={15}/></button><p>{o.hint}</p></div>)}
     </section>
-    {(lesson.id==='heart'||lesson.id==='eye')&&<button className="model-launch" onClick={()=>onModel(lesson.id as 'heart'|'eye')}>{lesson.id==='heart'?'▶ 拍動する3D心臓を手で動かす':'目の3D模型を手で分解する'}<small>{lesson.id==='heart'?'前側を開く・拍動と血流・弁の動き':'水晶体・虹彩・網膜を取り出して観察'}</small></button>}
+    {(lesson.id==='heart'||lesson.id==='eye'||lesson.id==='ear')&&<button className="model-launch" onClick={()=>onModel(lesson.id as 'heart'|'eye'|'ear')}>{lesson.id==='heart'?'▶ 拍動する3D心臓を手で動かす':lesson.id==='eye'?'▶ 目の3D模型を手で分解する':'▶ 耳の中を3Dで観察する'}<small>{lesson.id==='heart'?'前側を開く・拍動と血流・弁の動き':lesson.id==='eye'?'水晶体・虹彩・網膜を取り出して観察':'鼓膜・耳小骨・うずまき管・神経を回して見る'}</small></button>}
     <Visual id={lesson.id} level={level}/>
     {lesson.id==='liver'&&level!=='middle'&&<><GlucoseLab/><LiverStructureLab/></>}
     <section className="lesson-text-section"><h4><span className={`curriculum-chip ${level==='middle'?'middle':'high'}`}>{course.name}</span>構造と働き</h4><ul>{notes.map(item=><li key={item}>{item}</li>)}</ul></section>

@@ -1,0 +1,26 @@
+OpenEar 3D ear geometry — attribution and adaptation notice
+
+Original: Daniel Sieber, Peter Erfurt, Samuel John, Gabriel Ribeiro Dos Santos,
+Daniel Schurzig, Mads Sølvsten Sørensen and Thomas Lenarz, “The OpenEar
+library of 3D models of the human temporal bone based on computed tomography
+and micro-slicing”, Scientific Data 6, 180297 (2019). Specimen ZETA.
+Publication: https://doi.org/10.1038/sdata.2018.297
+Data: https://zenodo.org/records/1342657
+Licence: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+The geometry and offsets in this app were obtained from Cogni Anatomy:
+https://cogni.cards/anatomy/models/openear-0.bin
+https://cogni.cards/anatomy/models/atlas.json
+Their attribution and adaptation record:
+https://cogni.cards/anatomy/ATTRIBUTION.md
+Cogni Anatomy rebuilt axes from landmarks, scaled and placed the geometry,
+simplified it and recomputed normals. This app selects a subset, adjusts the
+viewing scale and position, and supplies its own colours and learning interface.
+The colouring and sequence highlights are explanatory, not real tissue colours
+or measured motion. No affiliation or endorsement is implied.
+
+SHA-256 openear-0.bin:
+d053e79e6cb1e3ee4a3f164ca668a18670aa4c208d88f019461aff1b26902acc
+SHA-256 openear-0.bin.gz:
+9803e5b87c58d695b05518dffd4a70a58196a5fe19d60a78cf28be909addc24c

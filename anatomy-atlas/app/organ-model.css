@@ -6,3 +6,15 @@
 .model-tools .model-check{flex-direction:row;align-items:center;gap:10px;min-height:32px}.model-check input{width:18px;height:18px;accent-color:#275e68}.heart-phase-key{display:flex;flex-wrap:wrap;gap:5px}.heart-phase-key span{padding:5px 7px;background:#e5ece8;border-radius:6px;font-size:10px}.model-beat{max-width:calc(100% - 36px);font-size:16px;line-height:1.5}.model-workbench .heart-chamber-label{font-size:12px;padding:5px 9px}
 
 .heart-views,.heart-flow-scope{display:flex;gap:5px}.heart-views button,.heart-flow-scope button{flex:1;font-size:11px;padding:8px 5px}.heart-phase-key{display:grid;grid-template-columns:1fr 1fr 1fr}.model-workbench .heart-phase-key button{font-size:10px;padding:6px 4px;min-height:44px}.heart-valve-state{display:grid;gap:8px;padding:12px;background:white;border:1px solid #c6d6d6;border-radius:10px}.heart-valve-state>div{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}.heart-valve-state b{padding:5px 9px;border-radius:6px;font-size:12px}.heart-valve-state .open{background:#dcefe4;color:#24583e}.heart-valve-state .closed{background:#ece6e1;color:#725145}.heart-chamber-info{border:1px solid #c3d5db;border-radius:10px;padding:12px;background:#f7fbfc;font-size:13px}.heart-chamber-info strong{font-size:17px}.heart-chamber-info dl{margin:8px 0}.heart-chamber-info dt{font-size:10px;color:#56737b;margin-top:8px}.heart-chamber-info dd{margin:2px 0;font-size:12px;line-height:1.6}.heart-chamber-info button{width:100%;margin-top:10px}.model-workbench .heart-chamber-label.selected{box-shadow:0 0 0 3px #285c6a;background:#effbff}
+
+.organ-guide{display:flex;flex-direction:column;gap:8px;padding:13px;border:1px solid #cbded7;border-radius:10px;background:#fff}
+.organ-guide h3{font-size:15px;font-weight:650;margin:0}.organ-guide p{color:#526d68}
+.eye-picks{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.model-workbench .eye-picks button{min-height:40px;text-align:left;border:1px solid #b7d0c8;background:#fff}
+.model-workbench .eye-picks button[aria-pressed=true]{background:#275e68;color:#fff}
+.eye-current{border-left:3px solid #38877a;padding:8px 10px;background:#edf7f2;border-radius:5px}.eye-current strong{font-size:14px}.eye-current p{margin-top:5px}.eye-current button{width:100%;margin-top:8px}
+.model-workbench .chamber-picks button{border:1px solid #c7d9d4;background:#fff}
+.model-workbench .chamber-picks button[aria-pressed=true]{background:#275e68;color:#fff}
+.model-advanced{border:1px solid #c6d8d7;border-radius:9px;padding:0 10px;background:#f9fcfa}
+.model-advanced summary{padding:12px 0;cursor:pointer;font-size:13px;font-weight:600}
+.model-advanced-content{display:flex;flex-direction:column;gap:12px;padding-bottom:12px}

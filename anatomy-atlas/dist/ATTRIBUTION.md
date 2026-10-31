@@ -33,3 +33,11 @@ This is a reference assembly with whole-body surface and selected organs, includ
 
 BodyParts3D © ライフサイエンス統合データベースセンター licensed under CC表示 4.0 国際。
 名称辞書は [IS-A名称表](https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_parts_list.txt) と [PART-OF名称表](https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_parts_list.txt) を基に、左右・細区分の組み立て、日本語表記の整理、中学生向けの語句補足を加えたものです。英語の原名称はモデルの対応関係と検索のために保持しています。
+
+## OpenEar and lesson preview images
+
+The ear workbench includes OpenEar (Sieber et al., specimen ZETA), as prepared
+and simplified by Cogni Anatomy. The heart and eye previews are renderings of
+BodyParts3D; the ear preview is a rendering of this adapted OpenEar model.
+These images and the ear geometry are licensed CC BY 4.0. The complete source,
+credit, adaptation and checksum record is in [models/openear-source.txt](models/openear-source.txt).

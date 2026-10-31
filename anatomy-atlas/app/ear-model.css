@@ -1,0 +1,21 @@
+.ear-workbench{background:#f1f5f3}
+.ear-workbench .model-workspace{grid-template-columns:minmax(0,1fr) 330px}
+.ear-stage{background:radial-gradient(circle at 47% 44%,#fafbf8,#e3ece8 76%)}
+.ear-stage-hint{position:absolute;bottom:18px;left:16px;right:16px;text-align:center;color:#55716e;font-size:12px;pointer-events:none}
+.ear-tools{gap:12px;background:#f8fbf9}
+.ear-intro span,.ear-current small{font-size:11px;color:#5c7a70;font-weight:650}
+.ear-intro h3{margin:5px 0 7px;font-size:17px;line-height:1.45}
+.ear-intro p{color:#526b66}
+.ear-current{display:flex;flex-direction:column;gap:6px;padding:14px;background:#fff;border:1px solid #d2e2da;border-radius:11px}
+.ear-current strong{font-size:15px;line-height:1.45}
+.ear-controls{display:grid;grid-template-columns:1fr auto;gap:7px}
+.ear-steps{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ear-steps button{display:flex;align-items:center;gap:7px;text-align:left}
+.ear-steps button span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#e3eee8;color:#376257;font-size:11px;flex-shrink:0}
+.ear-workbench .ear-steps button[aria-pressed=true]{background:#275e68;color:#fff}
+.ear-steps button[aria-pressed=true] span{background:#fff;color:#275e68}
+.ear-source{font-size:11px;color:#526c68;line-height:1.6}
+.ear-source summary{cursor:pointer;padding:8px 0;font-weight:600}
+.ear-source p{margin:8px 0}
+.ear-source a{text-decoration:underline;overflow-wrap:anywhere}
+@media(max-width:700px){.ear-workbench .model-workspace{display:flex}.ear-stage{min-height:45vh}.ear-tools{padding:14px}.ear-stage-hint{bottom:10px;font-size:11px}.ear-controls .model-primary{position:static}}
