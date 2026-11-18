@@ -11,10 +11,10 @@ import {learningSelections,learningSystem} from './learning-selection';
 import {configureAtlasMaterial} from './atlas-material';
 import {observationColor} from './observation-colors';
 import {SYSTEMS,localizeAnatomyName,type Atlas,type SceneState,type CameraPose} from './anatomy';
-interface Props {atlas:Atlas;state:SceneState;onSelect:(id:string)=>void;onProgress:(n:number)=>void;onError:(s:string)=>void;onCamera?:(pose:CameraPose)=>void}
-export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,onCamera}:Props){
- const host=useRef<HTMLDivElement>(null),latest=useRef(state),select=useRef(onSelect),reportCamera=useRef(onCamera);
- latest.current=state;select.current=onSelect;reportCamera.current=onCamera;
+interface Props {atlas:Atlas;state:SceneState;paused:boolean;onSelect:(id:string)=>void;onProgress:(n:number)=>void;onError:(s:string)=>void;onCamera?:(pose:CameraPose)=>void}
+export default function AnatomyScene({atlas,state,paused,onSelect,onProgress,onError,onCamera}:Props){
+ const host=useRef<HTMLDivElement>(null),latest=useRef(state),isPaused=useRef(paused),select=useRef(onSelect),reportCamera=useRef(onCamera);
+ latest.current=state;isPaused.current=paused;select.current=onSelect;reportCamera.current=onCamera;
  useEffect(()=>{
   const organSelections=learningSelections(atlas);
   const el=host.current!;let disposed=false,frame=0,dirty=true,ready=false,lastView='',lastReset=-1,lastIsolate='',layoutKey='',amount=0;
@@ -40,7 +40,13 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,on
   const materials:T.Material[]=[],geometries:T.BufferGeometry[]=[],pickers:(T.Mesh|undefined)[]=[],centers=atlas.parts.map(p=>new T.Vector3().fromArray(p.bounds[0]).add(new T.Vector3().fromArray(p.bounds[1])).multiplyScalar(.5));
   const offsets:T.Vector3[]=[],bounds=atlas.parts.map(p=>new T.Box3(new T.Vector3().fromArray(p.bounds[0]),new T.Vector3().fromArray(p.bounds[1])));
   const organOrigins=new Map<string,T.Vector3>(),organSystems=new Map<string,string>();
-  for(const organ of new Map([...organSelections.values()].map(c=>[c.id,c])).values()){const box=new T.Box3();atlas.parts.forEach((p,i)=>{if(organ.elements.includes(p.id))box.union(bounds[i]);});organOrigins.set(organ.id,box.getCenter(new T.Vector3()));const first=atlas.parts.find(p=>organ.elements.includes(p.id));if(first)organSystems.set(organ.id,learningSystem(organ.name,first.system));}
+  const partIndexById=new Map(atlas.parts.map((part,index)=>[part.id,index]));
+  for(const organ of new Set(organSelections.values())){
+   const box=new T.Box3();let firstIndex=Infinity;
+   for(const id of organ.elements){const index=partIndexById.get(id);if(index===undefined)continue;box.union(bounds[index]);firstIndex=Math.min(firstIndex,index);}
+   organOrigins.set(organ.id,box.getCenter(new T.Vector3()));
+   const first=atlas.parts[firstIndex];if(first)organSystems.set(organ.id,learningSystem(organ.name,first.system));
+  }
   let packingWidth=1,packingHeight=1;
   const batches:{solid:T.Mesh;ghost:T.Mesh;indices:number[]}[]=[];
   const markerPositions=new Float32Array(atlas.parts.length*3),markerGeometry=new T.BufferGeometry();markerGeometry.setAttribute('position',new T.BufferAttribute(markerPositions,3));
@@ -64,17 +70,18 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,on
   let loaded=0;
   const loadChunk=async(ci:number)=>{
    const chunk=atlas.chunks[ci],compressed=!!chunk.gzip&&typeof DecompressionStream!=='undefined';const modelPath=(compressed?chunk.gzip!:chunk.url).replace(/^\/+/,''),response=await fetch(new URL(modelPath,document.baseURI),{signal:abort.signal});const buffer=await decodeModelResponse(response,chunk.bytes,compressed);if(disposed)return;
-   const groups=new Map<string,T.BufferGeometry[]>();
+   const groups=new Map<string,{geometries:T.BufferGeometry[];indices:number[]}>();
    atlas.parts.forEach((p,i)=>{
     if(p.chunk!==ci)return;
     const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(new Float32Array(buffer,p.positions,p.vertexCount*3),3));
     // GPU normalized signed-short normals keep the complete atlas compact in memory.
     g.setAttribute('normal',new T.BufferAttribute(new Int16Array(buffer,p.normals,p.vertexCount*3),3,true));g.setIndex(new T.BufferAttribute(new Uint32Array(buffer,p.indices,p.indexCount),1));
     g.boundingBox=bounds[i].clone();g.computeBoundingSphere();const pick=new T.Mesh(g);pick.matrixAutoUpdate=false;pickers[i]=pick;geometries.push(g);
-    g.setAttribute('partIndex',new T.BufferAttribute(new Float32Array(p.vertexCount).fill(i),1));
-    const list=groups.get(p.system)??[];list.push(g);groups.set(p.system,list);
+    g.setAttribute('partIndex',new T.BufferAttribute(new Uint16Array(p.vertexCount).fill(i),1));
+    const group=groups.get(p.system)??{geometries:[],indices:[]};
+    group.geometries.push(g);group.indices.push(i);groups.set(p.system,group);
    });
-   groups.forEach((gs,system)=>{const geometry=mergeGeometries(gs,false);if(!geometry)throw new Error('人体の形状データを組み立てられませんでした。');geometries.push(geometry);const solid=new T.Mesh(geometry,mats.get(system as never)),ghost=new T.Mesh(geometry,ghostMats.get(system as never));solid.frustumCulled=ghost.frustumCulled=false;ghost.visible=false;ghost.renderOrder=1;scene.add(solid,ghost);batches.push({solid,ghost,indices:atlas.parts.flatMap((p,i)=>p.chunk===ci&&p.system===system?[i]:[])});});
+   groups.forEach(({geometries:groupGeometry,indices},system)=>{const geometry=mergeGeometries(groupGeometry,false);if(!geometry)throw new Error('人体の形状データを組み立てられませんでした。');geometries.push(geometry);const solid=new T.Mesh(geometry,mats.get(system as never)),ghost=new T.Mesh(geometry,ghostMats.get(system as never));solid.frustumCulled=ghost.frustumCulled=false;ghost.visible=false;ghost.renderOrder=1;scene.add(solid,ghost);batches.push({solid,ghost,indices});});
    lastState=null;loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100));dirty=true;
   };
   (async()=>{try{let cursor=0;await Promise.all(Array.from({length:3},async()=>{while(cursor<atlas.chunks.length){const i=cursor++;await loadChunk(i);}}));if(!disposed){ready=true;dirty=true;}}catch(e){if(!disposed)onError(e instanceof Error?e.message:'人体データを読み込めませんでした。');}})();
@@ -101,6 +108,7 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,on
   const clock=new T.Clock();let lastExtent=-1;
   const animate=()=>{
    if(disposed)return;frame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),s=latest.current;
+   if(isPaused.current||document.hidden)return;
    const changed=lastState?.visible!==s.visible||lastState?.selected!==s.selected||lastState?.isolate!==s.isolate||lastState?.hidden!==s.hidden||lastState?.faded!==s.faded||lastState?.region!==s.region||lastState?.revealed!==s.revealed||lastState?.labels!==s.labels||lastState?.selectionName!==s.selectionName||lastState?.focus!==s.focus||lastState?.inspection!==s.inspection;
    if(s.isolate||s.inspection||(s.focus??0)>0)hover.hidden=true;
    const moving=Math.abs(amount-s.explode)>.0001;const keepCamera=(s.keepCamera??0)!==lastKeepCamera;lastKeepCamera=s.keepCamera??0;
@@ -108,9 +116,11 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,on
    if(moving){amount=T.MathUtils.damp(amount,s.explode,8,dt);dirty=true;}
    if(changed||moving||lastExtent<0){
     const flags=partStates(atlas.parts,s);
-    const visibleParts=atlas.parts.filter((p,i)=>flags[i].visible);
-    const nextLayoutKey=visibleParts.map(p=>p.id).join(',')+':'+camera.aspect.toFixed(3);
-    if(nextLayoutKey!==layoutKey){if(!keepCamera){const layout=createOrganExplosionLayout(visibleParts,organSelections,camera.aspect);packingWidth=layout.width;packingHeight=layout.height;atlas.parts.forEach((p,i)=>{const shift=layout.offsets.get(p.id);offsets[i]=shift?centers[i].clone().add(new T.Vector3().fromArray(shift)):centers[i].clone();});}layoutKey=nextLayoutKey;}
+    if(amount>.45||s.explode>.45){
+     const visibleParts=atlas.parts.filter((p,i)=>flags[i].visible);
+     const nextLayoutKey=visibleParts.map(p=>p.id).join(',')+':'+camera.aspect.toFixed(3);
+     if(nextLayoutKey!==layoutKey){if(!keepCamera){const layout=createOrganExplosionLayout(visibleParts,organSelections,camera.aspect);packingWidth=layout.width;packingHeight=layout.height;atlas.parts.forEach((p,i)=>{const shift=layout.offsets.get(p.id);offsets[i]=shift?centers[i].clone().add(new T.Vector3().fromArray(shift)):centers[i].clone();});}layoutKey=nextLayoutKey;}
+    }
 
 
     atlas.parts.forEach((p,i)=>{

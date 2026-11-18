@@ -19,7 +19,8 @@ export const SYSTEMS: {id:SystemId;name:string;color:string;description:string}[
 ];
 export interface Part {id:string;name:string;conceptId:string;system:SystemId;chunk:number;positions:number;normals:number;indices:number;vertexCount:number;indexCount:number;bounds:[number[],number[]]}
 export interface Concept {id:string;name:string;elements:string[]}
-export interface Atlas {version:string;sex?:'male';source?:string;scope?:string;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
+export interface ModelGeometry {parts:Part[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
+export interface Atlas extends ModelGeometry {version:string;sex?:'male';source?:string;scope?:string;concepts:Concept[];organDetails?:Record<'heart'|'eye',ModelGeometry>}
 export type View = 'three-quarter'|'front'|'back'|'side';
 export type RegionId='all'|'head'|'chest'|'abdomen'|'pelvis'|'arms'|'legs';
 export interface CameraPose {position:number[];target:number[]}

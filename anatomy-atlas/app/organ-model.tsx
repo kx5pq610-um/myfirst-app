@@ -8,6 +8,7 @@ import {CHAMBERS,FLOW_STEPS,createHeartFlow,type HeartLandmarks} from './heart-f
 import {createChamberWall} from './chamber-wall';
 import {heartCycle} from './heart-cycle';
 import {HEART_OBSERVATION_STEPS,heartObservationState,heartFocusOpacity} from './heart-observation';
+import {HEART_VESSEL_IDS,organParts} from './organ-parts';
 
 type Kind='heart'|'eye';
 const EYE_ROUTE=[
@@ -20,14 +21,6 @@ const EYE_ROUTE=[
 ] as const;
 interface Settings {labels:boolean;running:boolean;bpm:number;volume:number;muted:boolean;cut:boolean;spread:number;drag:boolean;near:boolean;selected:string;solo:boolean;reset:number;flowPlaying:boolean;flowStep:number;coupled:boolean;opened:string[];slow:boolean;showFlow:boolean;depth:number;scrub:number;scrubRevision:number;focusChamber:boolean;view:'front'|'oblique'|'back';viewRevision:number;flowScope:'heart'|'all';xray:boolean}
 const defaults:Settings={labels:false,running:false,bpm:72,volume:.5,muted:false,cut:false,spread:0,drag:false,near:false,selected:'',solo:false,reset:0,flowPlaying:false,flowStep:0,coupled:false,opened:CHAMBERS.map(c=>c.id),slow:false,showFlow:true,depth:.56,scrub:0,scrubRevision:0,focusChamber:true,view:'front',viewRevision:0,flowScope:'heart',xray:false};
-function organParts(atlas:Atlas,kind:Kind){
- const names=kind==='heart'?['heart','wall of ventricle']:['right eye','right optic nerve'];
- const ids=new Set(atlas.concepts.filter(c=>names.includes(c.name.toLowerCase())).flatMap(c=>c.elements));
- if(kind==='heart')for(const p of atlas.parts)if(['FJ2966','FJ3413','FJ3441','FJ3645','FJ2925','FJ2933','FJ2944','FJ2950','FJ2955','FJ3020','FJ3040'].includes(p.id))ids.add(p.id);
- const opticId=atlas.parts.find(p=>p.name.toLowerCase()==='right optic nerve')?.id;
- return atlas.parts.filter(p=>kind==='heart'?ids.has(p.id):
-  (ids.has(p.id)||/right (retina|sclera|choroid|vitreous)/i.test(p.name))&&!/eyelid|tarsal|lacrimal|conjunctiva|rectus|oblique|levator|eyelash|skin|vessel/i.test(p.name)&&(p.name.toLowerCase()!=='right optic nerve'||p.id===opticId));
-}
 function partName(p:Part){const n=p.name.toLowerCase();const names:Record<string,string>={'right choroid':'脈絡膜','right cornea':'角膜','right iris':'虹彩','right lens':'水晶体','right optic nerve':'視神経','optic part of right retina':'網膜','right sclera':'強膜','suspensory ligament of right lens':'チン小帯（水晶体を支える線維）','right vitreous body':'硝子体','wall of ventricle':'心室の筋肉の壁'};if(names[n])return names[n];if(n.includes('pulmonary vein'))return '肺静脈';if(n==='pulmonary trunk')return '肺動脈（肺動脈幹）';if(n==='ascending aorta')return '大動脈（上行大動脈）';if(n.includes('vena cava'))return n.includes('superior')?'上大静脈':'下大静脈';if(n.includes('pulmonary valve'))return '肺動脈弁の部品';if(n.includes('aortic valve'))return '大動脈弁の部品';if(n.includes('mitral valve'))return '僧帽弁（左心房と左心室の間）';if(n.includes('tricuspid valve'))return '三尖弁（右心房と右心室の間）';if(n.includes('papillary'))return '乳頭筋（弁を支える筋肉）';if(n.includes('artery'))return '心臓を養う動脈の枝';if(n.includes('vein')||n.includes('sinus'))return '心臓の血液を集める静脈';return localizeAnatomyName(p.name);}
 function tint(p:Part,kind:Kind){const n=p.name.toLowerCase();if(kind==='heart')return n.includes('pulmonary vein')?'#bd4c55':n==='pulmonary trunk'||n.includes('vena cava')?'#557f9b':n==='ascending aorta'?'#b8464c':n.includes('cavity')?(n.includes('right')?'#487faa':'#bf565b'):n.includes('valve')?'#e7c0a0':p.system==='venous'?'#597893':p.system==='arterial'?'#ad484a':'#b66b64';return n.includes('lens')?'#d5e9e7':n.includes('cornea')?'#cce0e0':n.includes('iris')?'#789080':n.includes('retina')?'#dc8a77':n.includes('nerve')?'#d4c59a':n.includes('sclera')?'#ebe5dd':'#c79891';}
 function describe(p:Part|undefined,kind:Kind){
@@ -46,10 +39,11 @@ function describe(p:Part|undefined,kind:Kind){
 }
 
 export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;onClose:()=>void}){
- const parts=useMemo(()=>organParts(atlas,kind),[atlas,kind]);
+ const detail=atlas.organDetails?.[kind];
+ const parts=useMemo(()=>detail?.parts??organParts(atlas,kind),[atlas,detail,kind]);
  const [settings,setSettings]=useState<Settings>(()=>({...defaults,cut:kind==='heart'})),[ready,setReady]=useState(false),[error,setError]=useState(''),[phase,setPhase]=useState('停止中'),[audioError,setAudioError]=useState(''),[beatPhase,setBeatPhase]=useState(0),[eyeStep,setEyeStep]=useState(-1);
- const host=useRef<HTMLDivElement>(null),latest=useRef(settings),cycleSlider=useRef<HTMLInputElement>(null),audio=useRef<AudioContext|null>(null),master=useRef<GainNode|null>(null);
- latest.current=settings;
+ const host=useRef<HTMLDivElement>(null),latest=useRef(settings),close=useRef(onClose),cycleSlider=useRef<HTMLInputElement>(null),audio=useRef<AudioContext|null>(null),master=useRef<GainNode|null>(null);
+ latest.current=settings;close.current=onClose;
  const update=(p:Partial<Settings>)=>setSettings(s=>({...s,...p}));
  async function start(){
   if(settings.running){update({running:false,flowPlaying:false});return;}
@@ -57,27 +51,28 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
   try{audio.current??=new AudioContext();if(!master.current){master.current=audio.current.createGain();master.current.connect(audio.current.destination);}setAudioError('音声を準備しています…');void audio.current.resume().then(()=>setAudioError('')).catch(()=>setAudioError('音を開始できませんでした。Chromeで開き直し、端末の音量・ミュートを確認してください。'));}catch{setAudioError('音を開始できませんでした。Chromeで開き直し、端末の音量・ミュートを確認してください。');}
  }
  useEffect(()=>{if(master.current)master.current.gain.value=settings.muted||!settings.running?0:settings.volume;},[settings.muted,settings.volume,settings.running]);
- useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',key);return()=>{window.removeEventListener('keydown',key);void audio.current?.close();};},[onClose]);
+ useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape')close.current();};window.addEventListener('keydown',key);return()=>{window.removeEventListener('keydown',key);void audio.current?.close();};},[]);
  useEffect(()=>{
-  const el=host.current!;let disposed=false,raf=0,loaded=false;const abort=new AbortController();
+  const el=host.current!;let disposed=false,raf=0,loaded=false,dirty=true;const abort=new AbortController();
   let renderer:T.WebGLRenderer;
   try{renderer=new T.WebGLRenderer({antialias:true});}catch{setError('3D表示を開始できませんでした。ブラウザーを再読み込みしてください。');return;}
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setClearColor(kind==='heart'?'#e5e9e6':'#eaf0f1');renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.outputColorSpace=T.SRGBColorSpace;renderer.localClippingEnabled=true;el.appendChild(renderer.domElement);
   renderer.domElement.setAttribute('aria-label',`${kind==='heart'?'拍動する心臓':'部品を取り出せる目'}の3D模型。ドラッグで回転、部品をタップで選択。`);
   const scene=new T.Scene(),camera=new T.PerspectiveCamera(38,1,.01,100),controls=new OrbitControls(camera,renderer.domElement);
+  controls.addEventListener('change',()=>{dirty=true;});
   controls.enableDamping=true;controls.minDistance=.6;controls.maxDistance=12;controls.enablePan=true;
   scene.add(new T.HemisphereLight('#ffffff','#708594',2));const light=new T.DirectionalLight('#fff3ea',3);light.position.set(-3,4,5);scene.add(light);const fill=new T.DirectionalLight('#c4dfff',2);fill.position.set(3,1,-3);scene.add(fill);
   const group=new T.Group();scene.add(group);
-  const box=new T.Box3();for(const p of parts.filter(p=>kind!=='heart'||!['FJ2966','FJ3413','FJ3441','FJ3645','FJ2925','FJ2933','FJ2944','FJ2950','FJ2955','FJ3020','FJ3040'].includes(p.id)))box.union(new T.Box3(new T.Vector3().fromArray(p.bounds[0]),new T.Vector3().fromArray(p.bounds[1])));
+  const box=new T.Box3();for(const p of parts.filter(p=>kind!=='heart'||!HEART_VESSEL_IDS.includes(p.id)))box.union(new T.Box3(new T.Vector3().fromArray(p.bounds[0]),new T.Vector3().fromArray(p.bounds[1])));
   const center=box.getCenter(new T.Vector3());let extent=Math.max(...box.getSize(new T.Vector3()).toArray());
   if(kind==='eye'){const lens=parts.find(p=>p.name.toLowerCase()==='right lens');if(lens){const lensBox=new T.Box3(new T.Vector3().fromArray(lens.bounds[0]),new T.Vector3().fromArray(lens.bounds[1]));lensBox.getCenter(center);const diameter=Math.max(...lensBox.getSize(new T.Vector3()).toArray());center.z-=diameter*.7;extent=diameter*3.2;}}
   const scale=2/extent,plane=new T.Plane(kind==='eye'?new T.Vector3(-1,0,0):new T.Vector3(0,0,-1),0);
  type Piece={shell?:ReturnType<typeof createChamberWall>;section:T.Plane;cutZ:number;mesh:T.Mesh<T.BufferGeometry,T.MeshStandardMaterial>;part:Part;base:T.Vector3;offset:T.Vector3;spread:T.Vector3};const pieces:Piece[]=[];
   function fit(){const overview=kind==='heart'&&latest.current.cut;controls.target.set(0,0,0);const distance=Math.max(overview?5.1:4,(overview?3.7:3)/Math.max(.35,camera.aspect));if(kind==='heart'){const view=latest.current.view;camera.position.set(view==='oblique'?-distance*.5:0,.35,view==='back'?-distance:distance*(view==='oblique'?.87:1));}else camera.position.set(2.5,.6,distance);controls.update();}
-  const resize=()=>{if(!el.clientWidth||!el.clientHeight)return;renderer.setSize(el.clientWidth,el.clientHeight);camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();fit();};const observer=new ResizeObserver(resize);observer.observe(el);resize();
+  const resize=()=>{if(!el.clientWidth||!el.clientHeight)return;renderer.setSize(el.clientWidth,el.clientHeight);camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();fit();dirty=true;};const observer=new ResizeObserver(resize);observer.observe(el);resize();
   (async()=>{try{
    for(const ci of new Set(parts.map(p=>p.chunk))){
-    const chunk=atlas.chunks[ci],compressed=!!chunk.gzip&&typeof DecompressionStream!=='undefined';
+    const chunk=(detail?.chunks??atlas.chunks)[ci],compressed=!!chunk.gzip&&typeof DecompressionStream!=='undefined';
     const response=await fetch(new URL((compressed?chunk.gzip!:chunk.url).replace(/^\/+/,''),document.baseURI),{signal:abort.signal});
     const buffer=await decodeModelResponse(response,chunk.bytes,compressed);if(disposed)return;
     for(const p of parts.filter(p=>p.chunk===ci)){
@@ -93,7 +88,7 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
      pieces.push({mesh,part:p,base,offset:new T.Vector3(),spread,shell,section:new T.Plane(new T.Vector3(0,0,-1),base.z),cutZ:0});
     }
    }
-   loaded=true;setReady(true);
+   loaded=true;dirty=true;setReady(true);
   }catch(e){if(!disposed)setError(e instanceof Error?e.message:'3D模型を読み込めませんでした。');}})();
   const ray=new T.Raycaster(),pointer=new T.Vector2(),dragPlane=new T.Plane(),intersection=new T.Vector3(),dragStart=new T.Vector3(),savedOffset=new T.Vector3();let dragging:Piece|undefined,downX=0,downY=0,pointerId=-1;
   function nativePoint(match:(p:Part)=>boolean,fallback:T.Vector3){const bounds=new T.Box3();for(const p of parts.filter(match))bounds.union(new T.Box3(new T.Vector3().fromArray(p.bounds[0]),new T.Vector3().fromArray(p.bounds[1])));return bounds.isEmpty()?fallback.clone():bounds.getCenter(new T.Vector3()).sub(center).multiplyScalar(scale);}
@@ -108,13 +103,17 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
   function cast(e:PointerEvent){const rect=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2);ray.setFromCamera(pointer,camera);}
   function hit(e:PointerEvent){cast(e);const meshes=pieces.filter(p=>p.mesh.visible).map(p=>p.mesh);return ray.intersectObjects(meshes,true).find(h=>{if(!h.object.visible)return false;const piece=pieces.find(p=>p.mesh===h.object||p.part.id===h.object.userData.chamberId);return !!piece&&(!latest.current.cut||!latest.current.opened.includes(piece.part.id)||piece.section.distanceToPoint(h.point)>=-1e-5);});}
   function down(e:PointerEvent){downX=e.clientX;downY=e.clientY;pointerId=e.pointerId;if(!latest.current.drag)return;const h=hit(e);if(!h)return;dragging=pieces.find(p=>p.mesh===h.object||p.part.id===h.object.userData.chamberId);if(!dragging)return;controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(new T.Vector3()),h.point);dragStart.copy(h.point);savedOffset.copy(dragging.offset);const selectedId=dragging.part.id;setSettings(s=>({...s,selected:selectedId,running:false}));}
-  function move(e:PointerEvent){if(!dragging||e.pointerId!==pointerId)return;cast(e);if(ray.ray.intersectPlane(dragPlane,intersection))dragging.offset.copy(savedOffset).add(intersection.clone().sub(dragStart));}
+  function move(e:PointerEvent){if(!dragging||e.pointerId!==pointerId)return;cast(e);if(ray.ray.intersectPlane(dragPlane,intersection)){dragging.offset.copy(savedOffset).add(intersection.clone().sub(dragStart));dirty=true;}}
   function up(e:PointerEvent){if(dragging){dragging=undefined;controls.enabled=true;return;}if(Math.hypot(e.clientX-downX,e.clientY-downY)>6)return;const h=hit(e),p=pieces.find(p=>p.mesh===h?.object||p.part.id===h?.object.userData.chamberId);if(p){if(kind==='eye')setEyeStep(-1);setSettings(s=>({...s,selected:p.part.id}));}}
   function cancel(){dragging=undefined;controls.enabled=true;}
   renderer.domElement.addEventListener('pointerdown',down,true);renderer.domElement.addEventListener('pointermove',move);renderer.domElement.addEventListener('pointerup',up);renderer.domElement.addEventListener('pointercancel',cancel);
   let last=performance.now(),cycle=0,lastStage=-1,lastReset=0,wasRunning=false,lastSolo='',lastCut=latest.current.cut,flowProgress=0,lastFlowStep=-1,lastDepth=-1,lastScrub=-1,lastView=-1;
   function sound(high:boolean){const ctx=audio.current,gainOut=master.current;if(!ctx||!gainOut||ctx.state!=='running')return;const now=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(high?105:78,now);osc.frequency.exponentialRampToValueAtTime(high?55:42,now+.11);gain.gain.setValueAtTime(.001,now);gain.gain.exponentialRampToValueAtTime(.75,now+.012);gain.gain.exponentialRampToValueAtTime(.001,now+.16);osc.connect(gain).connect(gainOut);osc.start(now);osc.stop(now+.17);osc.onended=()=>{osc.disconnect();gain.disconnect();};}
+  let lastRenderedSettings:Settings|undefined;
   function animate(now:number){if(disposed)return;raf=requestAnimationFrame(animate);const s=latest.current,dt=Math.min((now-last)/1000,.08);last=now;const beatDt=dt*(s.slow?.25:1);
+   if(!loaded||document.hidden)return;
+   controls.update();
+   if(!dirty&&s===lastRenderedSettings&&!s.running&&!s.flowPlaying)return;
    const overview=kind==='heart'&&s.cut&&!s.solo;
    if(s.cut!==lastCut||s.viewRevision!==lastView){fit();lastCut=s.cut;lastView=s.viewRevision;}
    if(s.flowStep!==lastFlowStep){flowProgress=0;lastFlowStep=s.flowStep;}
@@ -130,7 +129,7 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
     const n=p.part.name.toLowerCase(),cavity=n.includes('cavity'),chamber=CHAMBERS.find(c=>c.id===p.part.id);
     const opened=s.opened.includes(p.part.id);
     const nativeWall=n.startsWith('wall of'),coronary=p.part.system==='arterial'||p.part.system==='venous';
-    const isPort=['FJ2966','FJ3413','FJ3441','FJ3645','FJ2925','FJ2933','FJ2944','FJ2950','FJ2955','FJ3020','FJ3040'].includes(p.part.id);
+    const isPort=HEART_VESSEL_IDS.includes(p.part.id);
     const shellView=kind==='heart'&&s.cut&&!s.solo;
     p.mesh.visible=(!s.solo||s.selected===p.part.id)&&(!cavity||s.cut||s.selected===p.part.id)&&!(shellView&&(nativeWall||coronary&&!isPort));
     p.mesh.material.emissive.set(p.part.id===s.selected?(kind==='eye'?'#24665d':'#2c160f'):'#000000');
@@ -160,10 +159,11 @@ export default function OrganModel({atlas,kind,onClose}:{atlas:Atlas;kind:Kind;o
    }
    const soloKey=s.solo?s.selected:'';
    if(soloKey!==lastSolo){if(soloKey){const p=pieces.find(p=>p.part.id===soloKey);if(p){const anchor=kind==='eye'&&p.part.name.toLowerCase()==='right cornea'?pieces.find(piece=>piece.part.name.toLowerCase()==='right iris')??p:p;const sphere=anchor.mesh.geometry.boundingSphere,radius=(sphere?.radius??.3)*(anchor===p?1:1.2),target=anchor.mesh.localToWorld(sphere?.center.clone()??new T.Vector3());controls.target.copy(target);const direction=kind==='eye'&&p.part.name.toLowerCase()==='right lens'?new T.Vector3(1,.12,.35):new T.Vector3(.5,.15,1);camera.position.copy(target).add(direction.normalize().multiplyScalar(Math.max(.8,radius*5.4/Math.min(1,camera.aspect))));}}else fit();lastSolo=soloKey;}
-   controls.update();flow?.update(camera,overview&&loaded,s.flowStep,flowProgress,s.coupled,s.running,currentBeat,beatDt,s.bpm,s.showFlow,transform,s.flowScope,s.xray,s.selected,s.labels);if(loaded)renderer.render(scene,camera);
+   flow?.update(camera,overview,s.flowStep,flowProgress,s.coupled,s.running,currentBeat,beatDt,s.bpm,s.showFlow,transform,s.flowScope,s.xray,s.selected,s.labels);
+   renderer.render(scene,camera);lastRenderedSettings=s;dirty=false;
   }raf=requestAnimationFrame(animate);
   return()=>{disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();controls.dispose();flow?.dispose();for(const p of pieces){p.shell?.dispose();p.mesh.geometry.dispose();p.mesh.material.dispose();}renderer.dispose();renderer.domElement.remove();};
- },[atlas,kind,parts]);
+ },[atlas,detail,kind,parts]);
  const selected=parts.find(p=>p.id===settings.selected),selectedChamber=CHAMBERS.find(c=>c.id===settings.selected),observation=heartObservationState(beatPhase);
  const chooseEyeStep=(index:number)=>{const step=EYE_ROUTE[index],part=parts.find(p=>p.name.toLowerCase()===step.name);if(!part)return;setEyeStep(index);update({selected:part.id,cut:step.cut,solo:false,spread:0,drag:false});};
  const observe=(p:number)=>{setPhase(heartCycle(p).text);setBeatPhase(p);update({scrub:p,scrubRevision:settings.scrubRevision+1,running:false,coupled:true,flowPlaying:false,cut:true,spread:0,drag:false});};

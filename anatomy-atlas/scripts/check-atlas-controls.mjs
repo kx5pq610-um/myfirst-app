@@ -45,7 +45,7 @@ for(const state of [initial,hideParts(initial),fadeSelected(initial),{...initial
 const texture=new T.DataTexture(new Float32Array(16),4,1,T.RGBAFormat,T.FloatType);
 for(const faded of [false,true]){
  const material=new T.MeshStandardMaterial();
- configureAtlasMaterial(material,texture,texture,4,faded);
+ configureAtlasMaterial(material,texture,texture,texture,{value:0},4,faded);
  assert.equal(material.customProgramCacheKey(),`atlas-parts-${faded?'faded':'solid'}`);
  const shader={uniforms:{},vertexShader:T.ShaderLib.standard.vertexShader,fragmentShader:T.ShaderLib.standard.fragmentShader};
  material.onBeforeCompile(shader,null);
