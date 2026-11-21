@@ -1,0 +1,182 @@
+'use strict';
+
+const aquariumArt = (() => {
+  const assetRoot = new URL('assets/', document.currentScript.src);
+  const columns = 5;
+  const frames = 20;
+  const fishSprites = {
+    guppy: { width: 192, height: 108, tankWidth: 77, anchorX: .624, anchorY: .4723 },
+    betta: { width: 208, height: 156, tankWidth: 100, anchorX: .6252, anchorY: .4554 },
+    discus: { width: 208, height: 192, tankWidth: 105, anchorX: .5447, anchorY: .4974 },
+    medaka: { width: 176, height: 62, tankWidth: 75, anchorX: .5787, anchorY: .4768 },
+    newt: { width: 240, height: 80, tankWidth: 173, anchorX: .5908, anchorY: .4725 },
+  };
+  const decorTypes = {
+    anubias: { name: 'アヌビアス', size: 116, top: 53 },
+    grass: { name: 'バリスネリア', size: 170, top: 9 },
+    wood: { name: '流木', size: 196, top: 97 },
+    rock: { name: '青龍石', size: 132, top: 72 },
+    cave: { name: '素焼きの隠れ家', size: 125, top: 80 },
+    air: { name: 'エアストーン', size: 55, top: 53 },
+  };
+  const decorKeys = Object.keys(decorTypes);
+  const foodColumns = ['flake', 'pellet', 'tablet', 'bloodworm', 'brine'];
+  const foodWobble = [.75, .16, .32, .48, .58];
+  const facing = new WeakMap();
+
+  function loadImage(path) {
+    const image = new Image();
+    image.src = new URL(path, assetRoot).href;
+    return image;
+  }
+
+  const foodSheet = loadImage('food.webp');
+  const decorSheet = loadImage('decor.webp');
+  let aquascape, stream, substrateSheet;
+  function preload(kinds, habitat) {
+    for (const kind of kinds) {
+      const sprite = fishSprites[kind];
+      if (sprite) sprite.swim ??= loadImage(`fish/${kind}-swim.webp`);
+    }
+    if (habitat === 'newt') stream ??= loadImage('stream.webp');
+    else aquascape ??= loadImage('aquascape.webp');
+  }
+
+  function drawScene(ctx, width, height, pixelAspect, lit, t, habitat, backdrop) {
+    const image = habitat === 'newt' ? stream : aquascape;
+    const aspect = width / height * pixelAspect;
+    if (backdrop && !image?.naturalWidth) return false;
+    if (backdrop) {
+      const sw = Math.min(image.naturalWidth, image.naturalHeight * aspect);
+      const sh = Math.min(image.naturalHeight, image.naturalWidth / aspect);
+      // Preserve the waterline in the riparium and the gravel in the planted tank.
+      const sy = (image.naturalHeight - sh) * (habitat === 'newt' ? 0 : .85);
+      ctx.drawImage(image, (image.naturalWidth - sw) / 2, sy, sw, sh, 0, 0, width, height);
+    } else {
+      const water = ctx.createLinearGradient(0, 0, 0, height);
+      water.addColorStop(0, '#19494c');
+      water.addColorStop(.64, '#0c292b');
+      water.addColorStop(1, '#091a20');
+      ctx.fillStyle = water;
+      ctx.fillRect(0, 0, width, height);
+      if (habitat === 'newt' && image?.naturalWidth) {
+        const sw = Math.min(image.naturalWidth, image.naturalHeight * aspect);
+        ctx.drawImage(image, (image.naturalWidth - sw) / 2, 0, sw,
+          image.naturalHeight * .218, 0, 0, width, height * .218);
+      }
+    }
+
+    ctx.save();
+    if (!lit) {
+      ctx.fillStyle = 'rgba(1, 13, 25, .57)';
+      ctx.fillRect(0, 0, width, height);
+    }
+    const glow = ctx.createRadialGradient(width * (.47 + Math.sin(t * .00032) * .15),
+      0, 6, width * .52, height * .14, width * .51);
+    glow.addColorStop(0, lit ? '#bed9af26' : '#739eb814');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = lit ? '#cae4d340' : '#8eb8c520';
+    for (let i = 0; i < 25; i++) {
+      const x = (i * 141.37 + t * (.0015 + i % 3 * .0009)) % width;
+      const y = (i * 97.41 + Math.sin(t * .00064 + i) * 10) % (height - 45);
+      ctx.fillRect(x, y, 1.3 + i % 3 * .42, 1.3 * pixelAspect);
+    }
+    ctx.restore();
+    return true;
+  }
+
+  function drawFish(ctx, fish, adultSize, pixelAspect) {
+    const sprite = fishSprites[fish.kind];
+    if (!sprite?.swim?.naturalWidth) return false;
+
+    const previous = facing.get(fish);
+    const phaseChange = previous ? Math.max(0, fish.tail - previous.phase) : 0;
+    const yaw = previous
+      ? previous.yaw + (fish.direction - previous.yaw) * (1 - Math.exp(-2.3 * phaseChange))
+      : fish.direction;
+    facing.set(fish, { yaw, phase: fish.tail });
+    const turn = Math.sign(yaw) || fish.direction;
+    const depthScale = .91 + .19 * fish.y / 620;
+    const width = sprite.tankWidth * fish.size / adultSize * depthScale;
+    const height = width * sprite.height / sprite.width;
+    const frame = Math.floor(fish.tail / (Math.PI * 2) * frames) % frames;
+    const tiltLimit = fish.kind === 'newt' ? .56 : .18;
+    const pitch = Math.max(-tiltLimit, Math.min(tiltLimit, fish.vy * .022 / pixelAspect));
+
+    ctx.save();
+    ctx.translate(fish.x, fish.y);
+    ctx.scale(turn * (.2 + .8 * Math.abs(yaw)), pixelAspect);
+    ctx.rotate(pitch);
+    ctx.globalAlpha = Math.max(.45, Math.min(1, fish.health / 85));
+    ctx.drawImage(sprite.swim, (frame % columns) * sprite.width,
+      Math.floor(frame / columns) * sprite.height, sprite.width, sprite.height,
+      -width * sprite.anchorX, -height * sprite.anchorY, width, height);
+    ctx.restore();
+    return true;
+  }
+
+  function drawPortrait(ctx, kind, width, height) {
+    const sprite = fishSprites[kind];
+    if (!sprite) return false;
+    // The high-resolution image is only needed when a fish is inspected.
+    sprite.portrait ??= loadImage(`fish/${kind}.webp`);
+    const image = sprite.portrait;
+    if (!image.naturalWidth) return false;
+    const scale = Math.min(width * .91 / image.naturalWidth, height * .88 / image.naturalHeight);
+    const w = image.naturalWidth * scale;
+    const h = image.naturalHeight * scale;
+    ctx.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
+    return true;
+  }
+
+  function drawFood(ctx, food, pixelAspect) {
+    if (!foodSheet.naturalWidth) return false;
+    const index = Math.max(0, foodColumns.indexOf(food.kind));
+    const angle = food.y >= 539 ? 0 : Math.sin(food.age * .075 + food.r * 8) * foodWobble[index];
+    const size = food.r * (index === 2 || index === 3 ? 4.5 : 3.3);
+    ctx.save();
+    ctx.translate(food.x, food.y);
+    ctx.scale(1, pixelAspect);
+    ctx.rotate(angle);
+    ctx.drawImage(foodSheet, index * 64, 0, 64, 64, -size / 2, -size / 2, size, size);
+    ctx.restore();
+    return true;
+  }
+
+  function drawSubstrate(ctx, kind, width, height, lit) {
+    if (kind === 'natural') return;
+    substrateSheet ??= loadImage('substrate.webp');
+    if (!substrateSheet.naturalWidth) return;
+    ctx.save();
+    ctx.globalAlpha = lit ? 1 : .55;
+    ctx.drawImage(substrateSheet, kind === 'gravel' ? 640 : 0, 0, 640, 240,
+      0, height - 96, width, 96);
+    ctx.restore();
+  }
+
+  function decorBounds(item, pixelAspect) {
+    const { size, top } = decorTypes[item.kind];
+    const left = item.x - size / 2;
+    const y = item.y - size * pixelAspect * (197 - top) / 200;
+    return { left, top: y, width: size, height: item.y - y };
+  }
+
+  function drawDecor(ctx, item, pixelAspect, lit, time) {
+    if (!decorSheet.naturalWidth) return;
+    const { size } = decorTypes[item.kind];
+    const height = size * pixelAspect;
+    ctx.save();
+    ctx.translate(item.x, item.y);
+    if (item.kind === 'grass' || item.kind === 'anubias') {
+      ctx.transform(1, 0, Math.sin(time * .0015 + item.x * .024) * .065 / pixelAspect, 1, 0, 0);
+    }
+    ctx.globalAlpha = lit ? 1 : .65;
+    ctx.drawImage(decorSheet, decorKeys.indexOf(item.kind) * 200, 0, 200, 200,
+      -size / 2, -height * .985, size, height);
+    ctx.restore();
+  }
+
+  return { preload, drawScene, drawFish, drawPortrait, drawFood, drawSubstrate, drawDecor, decorBounds, decorTypes };
+})();
