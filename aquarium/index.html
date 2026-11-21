@@ -78,6 +78,13 @@ html{-webkit-text-size-adjust:100%}button,select,input{touch-action:manipulation
  .shore-build select{font-size:16px}
  .aquarium.paludarium-tank{height:clamp(245px,39svh,355px)}
 }
+.challenge-card{margin:0 0 12px;padding:12px;border:1px solid #548479;border-radius:8px;background:#123734}
+.challenge-card h2{font-size:16px;margin:0 0 5px}
+.challenge-card p{font-size:13px;line-height:1.48;margin:0 0 8px;color:#c2e4dc}
+.challenge-card .btn{min-height:44px}
+.challenge-progress{display:flex;align-items:center;gap:8px;font-size:12px;color:#a9d6c7;margin-bottom:8px}
+.challenge-progress progress{accent-color:#66d3aa;width:95px}
+#challengeNotice:empty{display:none}
 </style></head><body><header><div><div class="kicker">LIVING AQUARIUM SIMULATION</div><h1>AQUA <span>LIFE</span></h1></div><div class="tag">PROTOTYPE 03 ・ スマホ対応</div></header><main class="layout"><section class="stage"><div class="tank-toolbar">
   <label for="habitat">水槽<select id="habitat">
     <option value="tropical">熱帯魚の水槽</option>
@@ -108,9 +115,18 @@ html{-webkit-text-size-adjust:100%}button,select,input{touch-action:manipulation
   <div class="fish-info-stats" id="selectedStats"></div></div>
 </div>
 <section class="newt-settings" id="newtSettings" aria-label="イモリウム" hidden>
+  <section id="challengeCard" class="challenge-card" aria-label="飼育チャレンジ">
+    <div class="challenge-progress"><progress id="challengeProgress" aria-label="クリアしたチャレンジ" max="3" value="0"></progress><span id="challengeCount"></span></div>
+    <h2 id="challengeTitle">岸辺のごはん</h2>
+    <p id="challengeGoal"></p>
+    <p id="challengeNotice" role="status"></p>
+    <button class="btn primary" id="challengeStart" type="button">チャレンジを始める</button>
+    <button class="btn primary" id="challengeAction" type="button" hidden></button>
+  </section>
   <div class="shore-actions">
     <button class="btn primary" id="shoreFeed" type="button">岸に赤虫を置く</button>
     <button class="btn primary" id="shoreDrain" type="button" hidden>水位を下げて岸を出す</button>
+    <button class="btn" id="targetFeed" type="button" hidden>水中で個別給餌</button>
     <button class="btn" id="newtWatch" type="button">拡大観察</button>
   </div>
   <p id="shoreMessage" role="status"></p>
@@ -118,7 +134,7 @@ html{-webkit-text-size-adjust:100%}button,select,input{touch-action:manipulation
     <summary>陸場をつくる</summary>
     <div class="shore-build">
       <label for="shoreStyle">素材<select id="shoreStyle">
-        <option value="moss">苔の石場</option><option value="wood">流木の坂</option><option value="none">水場だけ</option>
+        <option value="moss">苔の石場</option><option value="wood">流木の坂</option><option value="slate" id="slateOption" disabled hidden>段々石の岸</option><option value="none">水場だけ</option>
       </select></label>
       <label for="shoreSide">岸の位置<select id="shoreSide">
         <option value="left">左岸</option><option value="right">右岸</option>
@@ -156,7 +172,7 @@ html{-webkit-text-size-adjust:100%}button,select,input{touch-action:manipulation
     <li id="waterGoal"></li>
   </ul>
   <p id="observedKinds"></p>
-</details></section><aside class="panel"><h2>水槽コントロール</h2><p>AQUARIUM CONTROL · 魚たちの環境を整えましょう。</p><div class="stat"><div class="stat-line"><span>水質の良さ</span><span id="qualityVal">96%</span></div><div class="track"><div class="fill" id="qualityBar"></div></div></div><div class="stat"><div class="stat-line"><span>酸素レベル</span><span id="oxygenVal">93%</span></div><div class="track"><div class="fill" id="oxygenBar"></div></div></div><div class="stat"><div class="stat-line"><span>平均満腹度</span><span id="foodVal">78%</span></div><div class="track"><div class="fill" id="foodBar"></div></div></div><div class="stat"><div class="stat-line"><span>水温</span><span id="tempVal">26.0°C</span></div><div class="track"><div class="fill" id="tempBar"></div></div></div><div class="line"></div><div id="feedSection" class="quick-feed"><h2>餌の種類を選ぶ</h2><p>餌は種類ごとに沈み方と栄養が異なり、生きものにも好みがあります。</p><div class="food-choice"><span id="feedIcon" aria-hidden="true"></span><div class="selector" id="foodRow"><select id="feedType"><option value="flake">フレーク（浮遊性）</option><option value="pellet">小粒の顆粒（緩やかに沈む）</option><option value="tablet">沈下性タブレット（底魚向け）</option><option value="bloodworm">冷凍赤虫（嗜好性が高い）</option><option value="brine">ブラインシュリンプ（小型魚向け）</option></select></div></div><div class="fine" id="feedHint">水面に浮きやすく、小型魚が食べやすい餌です。</div><div class="s-row"><label for="feedAmount">餌の量</label><select id="feedAmount" style="width:140px"><option value="8">少なめ</option><option value="16" selected>ふつう</option><option value="28">多め</option></select></div></div><div class="line"></div><h2>生きものを迎える</h2><p id="stockHint">全12種類から選べます。</p><div class="selector"><select id="species"><option value="neon">ネオンテトラ</option><option value="guppy">グッピー</option><option value="angel">エンゼルフィッシュ</option><option value="cory">コリドラス</option><option value="cardinal">カージナルテトラ</option><option value="rummy">ラミーノーズテトラ</option><option value="platy">プラティ</option><option value="molly">ブラックモーリー</option><option value="betta">ベタ</option><option value="ram">ラミレジィ</option><option value="discus">ディスカス</option><option value="otocinclus">オトシンクルス</option></select><button class="btn primary" id="add">＋追加</button></div><div class="line"></div><h2>飼育環境</h2><div class="s-row"><label for="temperature">水温設定</label><input type="range" id="temperature" min="19" max="32" step="0.5" value="26"></div><div class="s-row"><label for="speed">時間の進み方</label><select id="speed" style="width:140px"><option value="1">×1 のんびり</option><option value="12" selected>×12 標準</option><option value="60">×60 はやい</option><option value="240">×240 成長観察</option></select></div><div class="s-row"><label for="lights">照明</label><input type="checkbox" id="lights" checked style="width:20px;accent-color:#64dbcd"></div><div class="line"></div><h2>飼育日記</h2><div id="events"><div class="event">水槽を立ち上げました。魚たちは元気に泳いでいます。</div></div><div class="line"></div><div class="fine">自動保存：30秒ごと／手動保存可。データはこのブラウザ内に保存されます（プライベートブラウズ等では残らない場合があります）。</div></aside></main><div class="toasts" id="toast" role="status"></div><script src="shore.js"></script><script src="newt.js?v=shore-1"></script><script src="art.js?v=shore-1"></script><script>
+</details></section><aside class="panel"><h2>水槽コントロール</h2><p>AQUARIUM CONTROL · 魚たちの環境を整えましょう。</p><div class="stat"><div class="stat-line"><span>水質の良さ</span><span id="qualityVal">96%</span></div><div class="track"><div class="fill" id="qualityBar"></div></div></div><div class="stat"><div class="stat-line"><span>酸素レベル</span><span id="oxygenVal">93%</span></div><div class="track"><div class="fill" id="oxygenBar"></div></div></div><div class="stat"><div class="stat-line"><span>平均満腹度</span><span id="foodVal">78%</span></div><div class="track"><div class="fill" id="foodBar"></div></div></div><div class="stat"><div class="stat-line"><span>水温</span><span id="tempVal">26.0°C</span></div><div class="track"><div class="fill" id="tempBar"></div></div></div><div class="line"></div><div id="feedSection" class="quick-feed"><h2>餌の種類を選ぶ</h2><p>餌は種類ごとに沈み方と栄養が異なり、生きものにも好みがあります。</p><div class="food-choice"><span id="feedIcon" aria-hidden="true"></span><div class="selector" id="foodRow"><select id="feedType"><option value="flake">フレーク（浮遊性）</option><option value="pellet">小粒の顆粒（緩やかに沈む）</option><option value="tablet">沈下性タブレット（底魚向け）</option><option value="bloodworm">冷凍赤虫（嗜好性が高い）</option><option value="brine">ブラインシュリンプ（小型魚向け）</option></select></div></div><div class="fine" id="feedHint">水面に浮きやすく、小型魚が食べやすい餌です。</div><div class="s-row"><label for="feedAmount">餌の量</label><select id="feedAmount" style="width:140px"><option value="8">少なめ</option><option value="16" selected>ふつう</option><option value="28">多め</option></select></div></div><div class="line"></div><h2>生きものを迎える</h2><p id="stockHint">全12種類から選べます。</p><div class="selector"><select id="species"><option value="neon">ネオンテトラ</option><option value="guppy">グッピー</option><option value="angel">エンゼルフィッシュ</option><option value="cory">コリドラス</option><option value="cardinal">カージナルテトラ</option><option value="rummy">ラミーノーズテトラ</option><option value="platy">プラティ</option><option value="molly">ブラックモーリー</option><option value="betta">ベタ</option><option value="ram">ラミレジィ</option><option value="discus">ディスカス</option><option value="otocinclus">オトシンクルス</option></select><button class="btn primary" id="add">＋追加</button></div><div class="line"></div><h2>飼育環境</h2><div class="s-row"><label for="temperature">水温設定</label><input type="range" id="temperature" min="19" max="32" step="0.5" value="26"></div><div class="s-row"><label for="speed">時間の進み方</label><select id="speed" style="width:140px"><option value="1">×1 のんびり</option><option value="12" selected>×12 標準</option><option value="60">×60 はやい</option><option value="240">×240 成長観察</option></select></div><div class="s-row"><label for="lights">照明</label><input type="checkbox" id="lights" checked style="width:20px;accent-color:#64dbcd"></div><div class="line"></div><h2>飼育日記</h2><div id="events"><div class="event">水槽を立ち上げました。魚たちは元気に泳いでいます。</div></div><div class="line"></div><div class="fine">自動保存：30秒ごと／手動保存可。データはこのブラウザ内に保存されます（プライベートブラウズ等では残らない場合があります）。</div></aside></main><div class="toasts" id="toast" role="status"></div><script src="shore.js?v=challenge-1"></script><script src="newt.js?v=shore-1"></script><script src="art.js?v=challenge-1"></script><script src="challenges.js"></script><script>
 (()=>{'use strict';const canvas=document.getElementById('tank');let ctx=canvas.getContext('2d');let W=1000,H=620,raf=0,last=performance.now(),acc=0,uiClock=0,saveClock=0,bubbles=[],food=[],fish=[],plants=[],logs=[];const $=s=>document.getElementById(s);const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));const rnd=(a,b)=>a+Math.random()*(b-a);const settings={};let world={minutes:480,quality:96,oxygen:93,temp:26,paused:false,births:0};let speed=12,selectedId=null;const species={neon:{name:'ネオンテトラ',size:20,speed:22,depth:.48},guppy:{name:'グッピー',size:23,speed:18,depth:.42},angel:{name:'エンゼルフィッシュ',size:37,speed:13,depth:.48},cory:{name:'コリドラス',size:25,speed:12,depth:.88},cardinal:{name:'カージナルテトラ',size:22,speed:22,depth:.48},rummy:{name:'ラミーノーズテトラ',size:22,speed:23,depth:.46},platy:{name:'プラティ',size:28,speed:17,depth:.50},molly:{name:'ブラックモーリー',size:32,speed:15,depth:.52},betta:{name:'ベタ',size:36,speed:10,depth:.44},ram:{name:'ラミレジィ',size:33,speed:15,depth:.7},discus:{name:'ディスカス',size:48,speed:9,depth:.5},otocinclus:{name:'オトシンクルス',size:21,speed:11,depth:.89},
  medaka:{name:'メダカ',size:22,speed:21,depth:.28},newt:{name:'アカハライモリ',size:48,speed:15,depth:.79}};
 const habitats = {
@@ -168,7 +184,7 @@ const habitats = {
 const art = typeof aquariumArt === 'undefined' ? null : aquariumArt;
 const habitatKey = 'aqualife_active_habitat_v1';
 const freshLayout = ()=>({ items:[], substrate:'natural', backdrop:true, newt:newtHabitat.settings(), shore:newtShore.settings() });
-const freshJournal = ()=>({ observed:[], eaten:[], changedWater:false, shore:[] });
+const freshJournal = ()=>({ observed:[], eaten:[], changedWater:false, shore:[], challenge:paludariumChallenges.load() });
 const bottomKinds = new Set(['cory','otocinclus']);
 const schoolingKinds = new Set(['neon','cardinal','rummy','medaka']);
 const motion = new WeakMap();
@@ -270,7 +286,8 @@ function load(){
   const validKinds=(list,keys)=>Array.isArray(list)?[...new Set(list.filter(kind=>keys.includes(kind)))]:[];
   journal={observed:validKinds(saved.journal?.observed,currentHabitat().kinds),
    eaten:validKinds(saved.journal?.eaten,Object.keys(feedKinds)),changedWater:saved.journal?.changedWater===true,
-   shore:validKinds(saved.journal?.shore,Object.keys(newtShore.events))};
+   shore:validKinds(saved.journal?.shore,Object.keys(newtShore.events)),
+   challenge:paludariumChallenges.load(saved.journal?.challenge)};
   const layout=saved.arrangement;
   arrangement={
    items:Array.isArray(layout?.items)?layout.items.filter(item=>item&&typeof item.kind==='string'&&
@@ -352,7 +369,7 @@ function simulate(dt){
 function nearestFood(f,radius){
  let nearest=null,best=radius**2;
  for(const p of food){
-  if(p.bank) continue;
+  if(p.bank||(p.individual&&p.visitor!==f.id)) continue;
   const score=((p.x-f.x)**2+(p.y-f.y)**2)/foodAffinity(f,p)**2;
   if(score<best){nearest=p;best=score}
  }
@@ -369,6 +386,8 @@ function eatFood(f,meal){
 }
 function tickFish(dt){
  const bait=bank?food.find(p=>p.bank):null;
+ const guest=food.find(p=>p.individual);
+ if(guest&&!fish.some(f=>f.id===guest.visitor))guest.individual=false;
  const corkOwner=bank?.hide?fish.find(f=>motion.get(f)?.note==='隠れ家から顔を出す'):null;
  if(bait&&!fish.some(f=>f.id===bait.visitor)) bait.visitor=closestToBank()?.id;
  for(const f of fish){
@@ -379,8 +398,12 @@ function tickFish(dt){
    const bankMeal=bait?.visitor===f.id?bait:null;
    const result=newtHabitat.advance(f,dt,arrangement.newt,surface,meal,shelter,route,bankMeal,world.shoreDamp);
    motion.set(f,{note:result.note});
-   if(result.eat) eatFood(f,meal);
-   if(result.eatBank) eatFood(f,bankMeal);
+   if(result.eat){
+    eatFood(f,meal);
+    if(meal.kind==='bloodworm') logChallenge({kind:'waterMeal',id:f.id});
+   }
+   if(result.eatBank){eatFood(f,bankMeal);logChallenge({kind:'shoreMeal'});}
+   if(result.note==='隠れ家から顔を出す') logChallenge({kind:'hide',damp:world.shoreDamp});
    if(result.event) recordSighting(result.event);
    continue;
   }
@@ -785,7 +808,7 @@ function inspectFish(f){
  }
 }
 $('fishClose').addEventListener('click',()=>inspectFish(null));
-function ui(){if(selectedId)refreshInspection();if(activeHabitat==='newt')renderDamp();renderJournal();let n=fish.length,average=(p,def=0)=>n?fish.reduce((a,f)=>a+f[p],0)/n:def,day=Math.floor(world.minutes/1440)+1,m=world.minutes%1440,h=Math.floor(m/60),min=Math.floor(m%60);$('dayLabel').textContent=`飼育 ${day}日目 ・ ${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;$('fishLabel').textContent='🐟 '+n+'匹';$('nFish').textContent=n+'匹';$('births').hidden=activeHabitat!=='tropical';$('births').textContent='生まれた稚魚 '+world.births+'匹';let health=Math.round(average('health',0));$('health').textContent=health+'%';$('mood').textContent=health>80?'落ち着いています':health>40?'少しストレスがあります':'飼育環境の改善が必要';$('days').textContent=day+'日目';$('speedText').textContent='シミュレーション速度 ×'+speed;const meter=(id,val,label)=>{$(id+'Val').textContent=label||Math.round(val)+'%';$(id+'Bar').style.width=clamp(val,0,100)+'%';$(id+'Bar').style.background=val<30?'linear-gradient(90deg,#bd5c41,#eeae67)':'linear-gradient(90deg,#267f8e,#6cddcc)'};meter('quality',world.quality);meter('oxygen',world.oxygen);meter('food',average('hunger'));meter('temp',100-Math.abs(world.temp-currentHabitat().temp)*11,world.temp.toFixed(1)+'°C')}
+function ui(){if(selectedId)refreshInspection();if(activeHabitat==='newt'){renderDamp();renderChallengeAction();}renderJournal();let n=fish.length,average=(p,def=0)=>n?fish.reduce((a,f)=>a+f[p],0)/n:def,day=Math.floor(world.minutes/1440)+1,m=world.minutes%1440,h=Math.floor(m/60),min=Math.floor(m%60);$('dayLabel').textContent=`飼育 ${day}日目 ・ ${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;$('fishLabel').textContent='🐟 '+n+'匹';$('nFish').textContent=n+'匹';$('births').hidden=activeHabitat!=='tropical';$('births').textContent='生まれた稚魚 '+world.births+'匹';let health=Math.round(average('health',0));$('health').textContent=health+'%';$('mood').textContent=health>80?'落ち着いています':health>40?'少しストレスがあります':'飼育環境の改善が必要';$('days').textContent=day+'日目';$('speedText').textContent='シミュレーション速度 ×'+speed;const meter=(id,val,label)=>{$(id+'Val').textContent=label||Math.round(val)+'%';$(id+'Bar').style.width=clamp(val,0,100)+'%';$(id+'Bar').style.background=val<30?'linear-gradient(90deg,#bd5c41,#eeae67)':'linear-gradient(90deg,#267f8e,#6cddcc)'};meter('quality',world.quality);meter('oxygen',world.oxygen);meter('food',average('hunger'));meter('temp',100-Math.abs(world.temp-currentHabitat().temp)*11,world.temp.toFixed(1)+'°C')}
 function frame(now){let dt=Math.min((now-last)/1000,.08);last=now;if(!world.paused){acc+=dt*speed;let simMin=dt*speed;simulate(simMin);tickFish(dt);for(const b of bubbles)b.speed+=0}draw(now);uiClock+=dt;saveClock+=dt;if(uiClock>.5){ui();uiClock=0}if(saveClock>30){save(true);saveClock=0}raf=requestAnimationFrame(frame)}
 function renderJournal(){
  const target=Math.min(3,currentHabitat().kinds.length);
@@ -879,10 +902,13 @@ function openHabitat(kind){
  if(kind==='newt'){
   $('newtWater').open=Boolean(bank&&!bank.dry);
   renderSightings();
+  $('challengeNotice').textContent='';
+  renderChallenge();
  }
  updateFeedHint();ui();
 }
 function updateShore(){
+ if(arrangement.shore.style==='slate'&&journal.challenge.unlocked<1)arrangement.shore.style='moss';
  bank=newtShore.build(arrangement.shore,surface);
  const {style,side,width,hide}=arrangement.shore;
  $('shoreStyle').value=style;$('shoreSide').value=side;
@@ -938,6 +964,74 @@ function recordSighting(event){
  log('観察記録 ・ '+newtShore.events[event].label);
  save(true);
 }
+function inProgress(stage){
+ const challenge=journal.challenge;
+ return challenge.active&&challenge.stage===stage;
+}
+function renderChallengeAction(){
+ const state=journal.challenge;
+ if(state.active){
+  const action=$('challengeAction');
+  if(state.stage===0) action.disabled=$('shoreFeed').disabled;
+  if(state.stage===1) action.disabled=!bank?.dry;
+  if(state.stage===2) action.disabled=food.some(p=>p.individual);
+ }
+}
+function renderChallenge(){
+ const state=journal.challenge, stage=paludariumChallenges.stages[state.stage];
+ $('challengeProgress').value=state.stage;
+ $('challengeCount').textContent=state.stage+'/3 クリア';
+ $('challengeTitle').textContent=stage?.title??'飼育チャレンジ完了';
+ $('challengeGoal').textContent=stage
+  ?stage.goal+(state.stage===2&&state.active?' （'+state.fed.length+'/2匹）':'')
+  :'段々石の岸と個別給餌は、この水槽づくりで引き続き使えます。';
+ $('challengeStart').hidden=state.active;
+ $('challengeStart').textContent=stage?'チャレンジを始める':'もう一度挑戦する';
+ $('challengeAction').hidden=!state.active;
+ $('challengeAction').textContent=stage?.action??'';
+ $('slateOption').disabled=state.unlocked<1;
+ $('slateOption').hidden=state.unlocked<1;
+ $('targetFeed').hidden=state.unlocked<2||inProgress(2);
+ renderChallengeAction();
+}
+function logChallenge(event){
+ const result=paludariumChallenges.progress(journal.challenge,event);
+ if(!result)return;
+ if(result.complete){
+  const text=result.title+'をクリア'+(result.prize?'。'+result.prize+'を獲得しました。':'。');
+  $('challengeNotice').textContent=text;
+  log(text);
+ }
+ renderChallenge();save(true);
+}
+function feedIndividual(){
+ if(world.paused){toast('再開すると餌を置けます');return}
+ if(food.some(p=>p.individual)){toast('置いた赤虫を食べる様子を待ちましょう');return}
+ const eligible=fish.filter(f=>f.y>=surface+14&&(!inProgress(2)||!journal.challenge.fed.includes(f.id)));
+ const target=eligible.find(f=>f.id===selectedId)??eligible[0];
+ if(!target){toast('次のイモリが水に戻ると餌を置けます');return}
+ const x=clamp(target.x+(target.x<500?36:-36),30,970);
+ food.push({kind:'bloodworm',x,y:clamp(target.y+8,surface+16,560),r:4,age:0,vy:1,
+  individual:true,visitor:target.id});
+ inspectFish(target);renderChallengeAction();save(true);
+}
+$('targetFeed').onclick=feedIndividual;
+$('challengeStart').onclick=()=>{
+ if(journal.challenge.stage===paludariumChallenges.stages.length){
+  const {unlocked}=journal.challenge;
+  journal.challenge=paludariumChallenges.load({unlocked});
+ }
+ journal.challenge.active=true;
+ $('challengeNotice').textContent='';
+ renderChallenge();save(true);
+};
+$('challengeAction').onclick=()=>{
+ switch(journal.challenge.stage){
+  case 0: $('shoreFeed').click();break;
+  case 1: $('shoreMist').click();break;
+  case 2: feedIndividual();break;
+ }
+};
 $('shoreStyle').onchange=e=>{arrangement.shore.style=e.target.value;updateShore();save(true)};
 $('shoreSide').onchange=e=>{arrangement.shore.side=e.target.value;updateShore();save(true)};
 $('shoreHide').onchange=e=>{arrangement.shore.hide=e.target.checked;updateShore();save(true)};
@@ -1045,7 +1139,8 @@ for(let i=0;i<26;i++){
 }
 let savedHabitat;
 try{savedHabitat=localStorage.getItem(habitatKey)}catch(e){}
-openHabitat(Object.hasOwn(habitats,savedHabitat)?savedHabitat:'tropical');
+const linkedHabitat=new URLSearchParams(location.search).get('habitat');
+openHabitat(Object.hasOwn(habitats,linkedHabitat)?linkedHabitat:Object.hasOwn(habitats,savedHabitat)?savedHabitat:'tropical');
 window.addEventListener('pagehide',()=>save(true));
 requestAnimationFrame(frame);
 // Keep feeding controls directly under the aquarium on phones.

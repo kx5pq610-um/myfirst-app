@@ -223,6 +223,7 @@ const aquariumArt = (() => {
   }
 
   function drawShore(ctx, bank, pixelAspect, lit) {
+    if(bank.style==='slate') shoreImages.slate ??= loadImage('shore/slate.webp');
     const image=shoreImages[bank.style];
     ctx.save();
     ctx.globalAlpha=lit?1:.63;
@@ -248,7 +249,7 @@ const aquariumArt = (() => {
       ctx.drawImage(tintedShore,0,0,bank.width,bank.height);
       ctx.restore();
     }else{
-      ctx.fillStyle=bank.style==='moss'?'#546348':'#685043';
+      ctx.fillStyle=bank.style==='slate'?'#72756e':bank.style==='moss'?'#546348':'#685043';
       ctx.beginPath();
       ctx.moveTo(bank.edge,bank.top+bank.height);
       for(let i=0;i<=20;i++) ctx.lineTo(bank.atX(i/20),bank.atY(i/20));
