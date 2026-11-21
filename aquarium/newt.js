@@ -11,42 +11,52 @@ const newtHabitat = (() => {
   const notes = { walk:'水底を歩く', wait:'水底で休む', rise:'泳いで浮上', breathe:'水面で息継ぎ',
     sink:'水底へ潜る', swim:'尾を振って泳ぐ', coast:'水中を滑る', feed:'餌を追う' };
   const motion = new WeakMap();
-  const floor = z => 449 + 129 * z;
+  const {floor,screenX}=newtShore;
   const surface = level => 550 - 4.9 * level;
 
   function settings(saved) {
     const tank = Object.hasOwn(tanks, saved?.tank) ? saved.tank : 'medium';
-    const level = Number.isFinite(saved?.level) ? clamp(Math.round(saved.level), 35, 90) : 85;
+    const level = Number.isFinite(saved?.level) ? clamp(Math.round(saved.level), 35, 90) : 65;
     return { tank, level };
   }
 
-  function pose(f, config, waterline) {
+  function pose(f, config, waterline, shore) {
     if (!f.space || !['x','z','lift'].every(axis => Number.isFinite(f.space[axis]))) {
       f.space = { x:clamp(f.x / 1000, .14, .86), z:clamp((f.y - 415) / 155, .14, .86), lift:0 };
     }
     const p = f.space;
-    p.x = clamp(p.x,.14,.86);
-    p.z = clamp(p.z,.08,.92);
-    p.lift = clamp(p.lift,0,floor(p.z)-waterline-24);
     const m = motion.get(f);
+    const visit=m?.visit?.key===shore?.key&&shore?.dry ? m.visit : null;
+    const onBank=Boolean(visit && visit.phase!=='approach');
+    p.x = clamp(p.x,onBank?.025:.14,onBank?.975:.86);
+    p.z = clamp(p.z,.08,.92);
+    const ground=floor(p.z);
+    const support=onBank ? shore.atY(visit.u) : ground;
+    p.lift = onBank ? ground-support : clamp(p.lift,0,ground-waterline-24);
     const zoom = .66 + .44 * p.z;
-    const ground = floor(p.z);
-    const step = m?.mode === 'walk' ? Math.abs(Math.sin(f.tail)) * 2.7 : 0;
-    f.x = 500 + (p.x - .5) * 1000 * zoom;
+    const mode=visit ? (onBank ? (visit.phase==='hide'?'hide':'bankWalk') : 'approach') : m?.mode??'wait';
+    const step = mode==='walk'||mode==='bankWalk' ? Math.abs(Math.sin(f.tail)) * 2.4 : 0;
+    f.x = screenX(p.x,p.z);
     f.y = ground - p.lift - 10 - step;
-    return { ground, x:f.x, y:f.y, scale:zoom*45/tanks[config.tank].width,
+    return { ground, support, onBank, x:f.x, y:f.y, scale:zoom*45/tanks[config.tank].width,
       yaw:m?.yaw ?? f.direction, pitch:m?.pitch ?? 0,
-      opacity:.79+.21*p.z, mode:m?.mode ?? 'wait', age:m?.age ?? 0 };
+      opacity:mode==='hide'?.48:.79+.21*p.z, mode, age:m?.age ?? 0 };
   }
 
-  function advance(f, dt, config, waterline, meal, shelter) {
-    pose(f,config,waterline);
+  function advance(f, dt, config, waterline, meal, shelter, shore, bait, damp) {
+    pose(f,config,waterline,shore);
     const p = f.space, tank = tanks[config.tank];
     let m = motion.get(f);
     if (!m) {
-      m = { mode:'wait', age:0, air:rand(5,15), wait:rand(.35,1.2), targetX:p.x,
+      m = { mode:'wait', age:0, air:rand(5,15), wait:rand(.35,1.2), shoreIn:rand(4,11), targetX:p.x,
         targetZ:p.z, vx:0, vz:0, vy:0, pitch:0, yaw:f.direction || 1 };
       motion.set(f,m);
+    }
+    const visit=newtShore.advance(f,m,dt,tank,shore,bait,damp,
+      m.air<=0||m.mode==='rise'||m.mode==='breathe'||Boolean(meal&&!bait));
+    if(visit){
+      pose(f,config,waterline,shore);
+      return visit;
     }
     function enter(mode) { m.mode=mode; m.age=0; }
     function wander() {
@@ -103,10 +113,10 @@ const newtHabitat = (() => {
     const heading=Math.hypot(vx,vz);
     if (heading>.32) m.yaw+=(vx/heading-m.yaw)*(1-Math.exp(-dt*7));
     if (Math.abs(m.yaw)>.16) f.direction=Math.sign(m.yaw);
-    const angle=breathing ? -.52 : walking ? .035*pulse : clamp(-m.vy*.011,-.83,.54);
+    const angle=breathing ? -.64 : walking ? .035*pulse : clamp(-m.vy*.012,-1.10,.54);
     m.pitch+=(angle-m.pitch)*(1-Math.exp(-dt*7));
     f.tail+=dt*(walking?heading*2.1:powering?10.7:m.mode==='coast'?2.4:0);
-    pose(f,config,waterline);
+    pose(f,config,waterline,shore);
     return { note:notes[m.mode], eat:m.mode==='feed' && Math.hypot(f.x-meal.x,f.y-meal.y)<25 };
   }
 
