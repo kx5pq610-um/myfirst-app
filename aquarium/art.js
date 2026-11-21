@@ -23,6 +23,9 @@ const aquariumArt = (() => {
   const foodColumns = ['flake', 'pellet', 'tablet', 'bloodworm', 'brine'];
   const foodWobble = [.75, .16, .32, .48, .58];
   const facing = new WeakMap();
+  const shoreImages = {};
+  let tintedShore;
+  let shoreTintKey;
 
   function loadImage(path) {
     const image = new Image();
@@ -42,6 +45,9 @@ const aquariumArt = (() => {
       stream ??= loadImage('stream.webp');
       fishSprites.newt.motion ??= loadImage('fish/newt-motion.webp');
       fishSprites.newt.walk ??= loadImage('fish/newt-walk.webp');
+      for(const material of ['moss','wood','cork']){
+        shoreImages[material] ??= loadImage(`shore/${material}.webp`);
+      }
     }
     else aquascape ??= loadImage('aquascape.webp');
   }
@@ -49,12 +55,14 @@ const aquariumArt = (() => {
   function drawRiparium(ctx, image, width, height, aspect, waterline, backdrop, time) {
     const sw = Math.min(image.naturalWidth, image.naturalHeight * aspect);
     const sx = (image.naturalWidth - sw) / 2;
-    const seam = Math.round(image.naturalHeight * .213);
+    const bankEdge = Math.round(image.naturalHeight * .183);
+    const underwater = Math.round(image.naturalHeight * .219);
     const bed = Math.round(image.naturalHeight * .723);
     const ground = height * .723;
-    ctx.drawImage(image, sx, 0, sw, seam, 0, 0, width, waterline);
+    const airWidth=Math.min(sw,bankEdge*aspect*height/waterline*1.55);
+    ctx.drawImage(image,(image.naturalWidth-airWidth)/2,0,airWidth,bankEdge,0,0,width,waterline);
     if (backdrop) {
-      ctx.drawImage(image, sx, seam, sw, bed - seam, 0, waterline, width, ground - waterline);
+      ctx.drawImage(image, sx, underwater, sw, bed - underwater, 0, waterline, width, ground - waterline);
       ctx.drawImage(image, sx, bed, sw, image.naturalHeight - bed, 0, ground, width, height - ground);
     }
     ctx.save();
@@ -123,7 +131,7 @@ const aquariumArt = (() => {
 
   function drawFish(ctx, fish, adultSize, pixelAspect, pose) {
     const sprite = fishSprites[fish.kind];
-    const animation = pose && (pose.mode === 'walk' || pose.mode === 'wait') ? sprite?.walk : sprite?.motion;
+    const animation = pose && ['walk','wait','bankWalk','hide'].includes(pose.mode) ? sprite?.walk : sprite?.motion;
     const image = animation?.naturalWidth ? animation : sprite?.swim;
     if (!image?.naturalWidth) return false;
 
@@ -214,5 +222,53 @@ const aquariumArt = (() => {
     ctx.restore();
   }
 
-  return { preload, drawScene, drawFish, drawPortrait, drawFood, drawSubstrate, drawDecor, decorBounds, decorTypes };
+  function drawShore(ctx, bank, pixelAspect, lit) {
+    const image=shoreImages[bank.style];
+    ctx.save();
+    ctx.globalAlpha=lit?1:.63;
+    if(image?.naturalWidth){
+      const key=bank.style+bank.waterline;
+      if(shoreTintKey!==key){
+        tintedShore ??= document.createElement('canvas');
+        tintedShore.width=image.naturalWidth;
+        tintedShore.height=image.naturalHeight;
+        const scratch=tintedShore.getContext('2d');
+        scratch.drawImage(image,0,0);
+        const y=Math.max(0,(bank.waterline-bank.top)/bank.height*tintedShore.height);
+        if(y<tintedShore.height){
+          scratch.globalCompositeOperation='source-atop';
+          scratch.fillStyle='#153c4470';
+          scratch.fillRect(0,y,tintedShore.width,tintedShore.height-y);
+        }
+        shoreTintKey=key;
+      }
+      ctx.save();
+      ctx.translate(bank.edge,bank.top);
+      ctx.scale(bank.direction,1);
+      ctx.drawImage(tintedShore,0,0,bank.width,bank.height);
+      ctx.restore();
+    }else{
+      ctx.fillStyle=bank.style==='moss'?'#546348':'#685043';
+      ctx.beginPath();
+      ctx.moveTo(bank.edge,bank.top+bank.height);
+      for(let i=0;i<=20;i++) ctx.lineTo(bank.atX(i/20),bank.atY(i/20));
+      ctx.lineTo(bank.atX(1),bank.top+bank.height);
+      ctx.fill();
+    }
+    if(bank.hide){
+      const {x,y,width}=bank.hide;
+      const height=width*.45*pixelAspect;
+      const cork=shoreImages.cork;
+      if(cork?.naturalWidth) ctx.drawImage(cork,x-width/2,y-height,width,height);
+      else {
+        ctx.fillStyle='#594535';ctx.beginPath();
+        ctx.ellipse(x,y,width*.5,height,0,Math.PI,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#241e17';ctx.beginPath();
+        ctx.ellipse(x,y,width*.34,height*.60,0,Math.PI,Math.PI*2);ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  return { preload, drawScene, drawFish, drawPortrait, drawFood, drawSubstrate, drawDecor, drawShore, decorBounds, decorTypes };
 })();
