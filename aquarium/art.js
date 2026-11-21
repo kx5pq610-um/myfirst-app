@@ -38,19 +38,50 @@ const aquariumArt = (() => {
       const sprite = fishSprites[kind];
       if (sprite) sprite.swim ??= loadImage(`fish/${kind}-swim.webp`);
     }
-    if (habitat === 'newt') stream ??= loadImage('stream.webp');
+    if (habitat === 'newt') {
+      stream ??= loadImage('stream.webp');
+      fishSprites.newt.motion ??= loadImage('fish/newt-motion.webp');
+      fishSprites.newt.walk ??= loadImage('fish/newt-walk.webp');
+    }
     else aquascape ??= loadImage('aquascape.webp');
   }
 
-  function drawScene(ctx, width, height, pixelAspect, lit, t, habitat, backdrop) {
+  function drawRiparium(ctx, image, width, height, aspect, waterline, backdrop, time) {
+    const sw = Math.min(image.naturalWidth, image.naturalHeight * aspect);
+    const sx = (image.naturalWidth - sw) / 2;
+    const seam = Math.round(image.naturalHeight * .213);
+    const bed = Math.round(image.naturalHeight * .723);
+    const ground = height * .723;
+    ctx.drawImage(image, sx, 0, sw, seam, 0, 0, width, waterline);
+    if (backdrop) {
+      ctx.drawImage(image, sx, seam, sw, bed - seam, 0, waterline, width, ground - waterline);
+      ctx.drawImage(image, sx, bed, sw, image.naturalHeight - bed, 0, ground, width, height - ground);
+    }
+    ctx.save();
+    const reflection = ctx.createLinearGradient(0, waterline - 2, 0, waterline + 23);
+    reflection.addColorStop(0,'transparent');
+    reflection.addColorStop(.14,'#a4d0ad80');
+    reflection.addColorStop(1,'transparent');
+    ctx.fillStyle=reflection;
+    ctx.fillRect(0,waterline-2,width,25);
+    ctx.lineWidth=1.2;
+    ctx.strokeStyle='#c0dfbb4d';
+    ctx.beginPath();
+    for(let x=0;x<=width;x+=12){
+      const y=waterline+Math.sin(x*.029-time*.0017)*1.25+Math.sin(x*.061+time*.0027)*.5;
+      ctx.lineTo(x,y);
+    }
+    ctx.stroke();ctx.restore();
+  }
+
+  function drawScene(ctx, width, height, pixelAspect, lit, t, habitat, backdrop, waterline) {
     const image = habitat === 'newt' ? stream : aquascape;
     const aspect = width / height * pixelAspect;
-    if (backdrop && !image?.naturalWidth) return false;
-    if (backdrop) {
+    if (habitat !== 'newt' && backdrop && !image?.naturalWidth) return false;
+    if (habitat !== 'newt' && backdrop) {
       const sw = Math.min(image.naturalWidth, image.naturalHeight * aspect);
       const sh = Math.min(image.naturalHeight, image.naturalWidth / aspect);
-      // Preserve the waterline in the riparium and the gravel in the planted tank.
-      const sy = (image.naturalHeight - sh) * (habitat === 'newt' ? 0 : .85);
+      const sy = (image.naturalHeight - sh) * .85;
       ctx.drawImage(image, (image.naturalWidth - sw) / 2, sy, sw, sh, 0, 0, width, height);
     } else {
       const water = ctx.createLinearGradient(0, 0, 0, height);
@@ -59,10 +90,12 @@ const aquariumArt = (() => {
       water.addColorStop(1, '#091a20');
       ctx.fillStyle = water;
       ctx.fillRect(0, 0, width, height);
-      if (habitat === 'newt' && image?.naturalWidth) {
-        const sw = Math.min(image.naturalWidth, image.naturalHeight * aspect);
-        ctx.drawImage(image, (image.naturalWidth - sw) / 2, 0, sw,
-          image.naturalHeight * .218, 0, 0, width, height * .218);
+      if (habitat === 'newt' && image?.naturalWidth) drawRiparium(ctx,image,width,height,aspect,waterline,backdrop,t);
+      else if (habitat === 'newt') {
+        ctx.fillStyle='#34453a';
+        ctx.fillRect(0,0,width,waterline);
+        ctx.fillStyle='#a4d0ad70';
+        ctx.fillRect(0,waterline,width,2);
       }
     }
 
@@ -80,37 +113,40 @@ const aquariumArt = (() => {
     ctx.fillStyle = lit ? '#cae4d340' : '#8eb8c520';
     for (let i = 0; i < 25; i++) {
       const x = (i * 141.37 + t * (.0015 + i % 3 * .0009)) % width;
-      const y = (i * 97.41 + Math.sin(t * .00064 + i) * 10) % (height - 45);
+      const top = habitat === 'newt' ? waterline : 0;
+      const y = top + (i * 97.41 + 10 + Math.sin(t * .00064 + i) * 10) % (height - top - 45);
       ctx.fillRect(x, y, 1.3 + i % 3 * .42, 1.3 * pixelAspect);
     }
     ctx.restore();
     return true;
   }
 
-  function drawFish(ctx, fish, adultSize, pixelAspect) {
+  function drawFish(ctx, fish, adultSize, pixelAspect, pose) {
     const sprite = fishSprites[fish.kind];
-    if (!sprite?.swim?.naturalWidth) return false;
+    const animation = pose && (pose.mode === 'walk' || pose.mode === 'wait') ? sprite?.walk : sprite?.motion;
+    const image = animation?.naturalWidth ? animation : sprite?.swim;
+    if (!image?.naturalWidth) return false;
 
     const previous = facing.get(fish);
     const phaseChange = previous ? Math.max(0, fish.tail - previous.phase) : 0;
-    const yaw = previous
+    const yaw = pose?.yaw ?? (previous
       ? previous.yaw + (fish.direction - previous.yaw) * (1 - Math.exp(-2.3 * phaseChange))
-      : fish.direction;
-    facing.set(fish, { yaw, phase: fish.tail });
+      : fish.direction);
+    if (!pose) facing.set(fish, { yaw, phase: fish.tail });
     const turn = Math.sign(yaw) || fish.direction;
-    const depthScale = .91 + .19 * fish.y / 620;
+    const depthScale = pose?.scale ?? (.91 + .19 * fish.y / 620);
     const width = sprite.tankWidth * fish.size / adultSize * depthScale;
     const height = width * sprite.height / sprite.width;
     const frame = Math.floor(fish.tail / (Math.PI * 2) * frames) % frames;
-    const tiltLimit = fish.kind === 'newt' ? .56 : .18;
-    const pitch = Math.max(-tiltLimit, Math.min(tiltLimit, fish.vy * .022 / pixelAspect));
+    const pitch = pose?.pitch ?? Math.max(-.18, Math.min(.18, fish.vy * .022 / pixelAspect));
 
     ctx.save();
     ctx.translate(fish.x, fish.y);
-    ctx.scale(turn * (.2 + .8 * Math.abs(yaw)), pixelAspect);
+    const headOn=pose ? .42 : .2;
+    ctx.scale(turn * (headOn + (1-headOn) * Math.abs(yaw)), pixelAspect);
     ctx.rotate(pitch);
-    ctx.globalAlpha = Math.max(.45, Math.min(1, fish.health / 85));
-    ctx.drawImage(sprite.swim, (frame % columns) * sprite.width,
+    ctx.globalAlpha = Math.max(.45, Math.min(1, fish.health / 85)) * (pose?.opacity ?? 1);
+    ctx.drawImage(image, (frame % columns) * sprite.width,
       Math.floor(frame / columns) * sprite.height, sprite.width, sprite.height,
       -width * sprite.anchorX, -height * sprite.anchorY, width, height);
     ctx.restore();
